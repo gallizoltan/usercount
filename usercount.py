@@ -1,18 +1,12 @@
 #!/usr/bin/python
 
-from six.moves import urllib
-from datetime import datetime
 from subprocess import call
 from mastodon import Mastodon
-import time
-import threading
 import csv
 import os
 import json
 import time
-import signal
 import sys
-import os.path        # For checking whether secrets file exists
 import requests       # For doing the web stuff, dummy!
 
 
@@ -71,10 +65,6 @@ mastodon = Mastodon(
     access_token = uc_access_token,
     api_base_url = 'https://' + mastodon_hostname,
 )
-
-# Initialise access headers
-headers={ 'Authorization': 'Bearer %s'%uc_access_token }
-
 
 ###############################################################################
 # GET THE DATA
