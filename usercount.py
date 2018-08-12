@@ -48,23 +48,25 @@ def get_parameter( parameter, file_path ):
     print(file_path + "  Missing parameter %s "%parameter)
     sys.exit(0)
 
-# Load secrets from secrets file
-secrets_filepath = "secrets/secrets.txt"
-uc_client_id     = get_parameter("uc_client_id",     secrets_filepath)
-uc_client_secret = get_parameter("uc_client_secret", secrets_filepath)
-uc_access_token  = get_parameter("uc_access_token",  secrets_filepath)
+def get_mastodon():
+    # Load secrets from secrets file
+    secrets_filepath = "secrets/secrets.txt"
+    uc_client_id     = get_parameter("uc_client_id",     secrets_filepath)
+    uc_client_secret = get_parameter("uc_client_secret", secrets_filepath)
+    uc_access_token  = get_parameter("uc_access_token",  secrets_filepath)
 
-# Load configuration from config file
-config_filepath = "config.txt"
-mastodon_hostname = get_parameter("mastodon_hostname", config_filepath) # E.g., mastodon.social
+    # Load configuration from config file
+    config_filepath = "config.txt"
+    mastodon_hostname = get_parameter("mastodon_hostname", config_filepath) # E.g., mastodon.social
 
-# Initialise Mastodon API
-mastodon = Mastodon(
-    client_id = uc_client_id,
-    client_secret = uc_client_secret,
-    access_token = uc_access_token,
-    api_base_url = 'https://' + mastodon_hostname,
-)
+    # Initialise Mastodon API
+    mastodon = Mastodon(
+        client_id = uc_client_id,
+        client_secret = uc_client_secret,
+        access_token = uc_access_token,
+        api_base_url = 'https://' + mastodon_hostname,
+    )
+    return mastodon
 
 ###############################################################################
 # GET THE DATA
@@ -161,6 +163,7 @@ call(["gnuplot", "generate.gnuplot"])
 
 
 if do_upload:
+    mastodon = get_mastodon()
     # Upload chart
     file_to_upload = 'graph.png'
 
