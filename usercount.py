@@ -25,6 +25,9 @@ do_upload = True
 if '--no-upload' in sys.argv:
     do_upload = False
 
+# config.txt, mastostats.csv, generate.gnuplot, etc. are in the same folder as this file
+os.chdir(os.path.dirname(__file__))
+
 # Check mastostats.csv exists, if not, create it
 if not os.path.isfile("mastostats.csv"):    
         print("mastostats.csv does not exist, creating it...")
