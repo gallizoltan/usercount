@@ -88,6 +88,7 @@ user_count = 0
 instance_count = 0
 for instance in instances:
     if not "users" in instance: continue
+    if instance["users"] == None: continue
     user_count += instance["users"]
     if instance["up"] == True:
         instance_count += 1
