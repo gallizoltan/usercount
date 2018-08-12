@@ -3,7 +3,6 @@ set term dumb
 
 # derivative functions.  Return 1/0 for first point, otherwise delta y or (delta y)/(delta x)
 d(y) = ($0 == 0) ? (y1 = y, 1/0) : (y2 = y1, y1 = y, y1-y2)
-d2(x,y) = ($0 == 0) ? (x1 = x, y1 = y, 1/0) : (x2 = x1, x1 = x, y2 = y1, y1 = y, (y1-y2)/(x1-x2))
 
 # Set length of time for the entire graph
 day = 24*60*60
@@ -24,8 +23,8 @@ set xrange [time(0) - timespan:]
 
 # Plot 'usercount' of the past week and get bounds (for GRAPH 1 y1)
 plot "mastostats.csv" using 1:2
-usercountlow = 0
-#usercountlow = GPVAL_DATA_Y_MIN
+#usercountlow = 0
+usercountlow = GPVAL_DATA_Y_MIN
 usercounthigh = GPVAL_DATA_Y_MAX
 
 # Plot derivative of 'usercount' of the past week and get bounds (for GRAPH 1 y2)
@@ -93,13 +92,18 @@ set lmargin lmarg
 set rmargin rmarg
 
 # Set Y axis
-set yr [usercountlow:usercounthigh]
-set ylabel "Number of users" textcolor rgb "#93ddff" offset 1,0,0
+set yrange [usercountlow:usercounthigh]
+set ylabel "Number of users" textcolor rgb "#93ddff" offset 2,0,0
+set decimal locale
+set format y "%'.0f"
 
 # Set Y2 axis
-set y2r [0:uc_derivative_high * 2]
-set y2label 'Hourly increase' textcolor rgb "#7ae9d8" 
-set y2tics 3000 
+set y2range [0:uc_derivative_high * 1.2]
+set y2label 'Hourly increase' textcolor rgb "#7ae9d8"
+round(x) = x - floor(x) < 0.5 ? floor(x) : ceil(x)
+round2(x, n) = round(x*10**n)*10.0**(-n)
+set y2tics round2(uc_derivative_high/3, -1)
+set format y2 "%'.0f"
 
 # Set X axis
 set xdata time
@@ -140,8 +144,8 @@ set lmargin lmarg
 set rmargin rmarg
 
 # Set Y axis
-set yr [0:instanceshigh]
-set ylabel "Active instances" textcolor rgb "#E9967A"
+set yrange [0:instanceshigh]
+set ylabel "Active instances" textcolor rgb "#E9967A" offset 1,0,0
 
 # Set X axis
 set xdata time 
