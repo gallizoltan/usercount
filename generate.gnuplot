@@ -42,7 +42,7 @@ instanceshigh = GPVAL_DATA_Y_MAX
 ###############################################################################
 
 # Set up our fonts and such
-set terminal png truecolor size 1464,660 enhanced font "/home/lode/usercount/fonts/RobotoCond.ttf" 16 background rgb "#282d37"
+set terminal png truecolor size 1464,660 enhanced font "" 16 background rgb "#282d37"
 set output 'graph.png'
 
 # Set border colour and line width
