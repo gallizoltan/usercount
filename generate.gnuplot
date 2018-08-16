@@ -100,9 +100,7 @@ set format y "%'.0f"
 # Set Y2 axis
 set y2range [0:uc_derivative_high * 1.2]
 set y2label 'Hourly increase' textcolor rgb "#7ae9d8"
-round(x) = x - floor(x) < 0.5 ? floor(x) : ceil(x)
-round2(x, n) = round(x*10**n)*10.0**(-n)
-set y2tics round2(uc_derivative_high/3, -1)
+set y2tics textcolor rgb "white"
 set format y2 "%'.0f"
 
 # Set X axis
