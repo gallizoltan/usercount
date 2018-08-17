@@ -81,14 +81,17 @@ instances = json.loads(page.content)
 
 user_count = 0
 instance_count = 0
+print(" === Leading instances ===")
 for instance in instances:
     if not "users" in instance: continue
     if instance["users"] == None: continue
     user_count += instance["users"]
+    if instance["users"] > 1000:
+        print(instance["name"] + ": " + str(instance["users"]))
     if instance["up"] == True:
         instance_count += 1
 
-print("Number of users: %s " % user_count)
+print("\nNumber of users: %s " % user_count)
 print("Number of instances: %s " % instance_count)
 
 ###############################################################################
@@ -159,7 +162,8 @@ if len(usercount_dict) > 168:
 ###############################################################################
 
 # Generate chart
-call(["gnuplot", "generate.gnuplot"])
+FNULL = open(os.devnull, 'w')
+call(["gnuplot", "generate.gnuplot"], stdout=FNULL, stderr=FNULL)
 
 
 if do_upload:
