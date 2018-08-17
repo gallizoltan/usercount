@@ -17,10 +17,11 @@ This is a variation of the bot by @josefkenny: https://github.com/josefkenny/use
 
 ### Usage:
 
-1. Edit `config.txt` to specify the hostname of the Mastodon instance you would like to get data from.
-2. Create a file called `secrets.txt` in the folder `secrets/`, as follows:
+1. Create a file called `config.txt` to specify the hostname of the Mastodon instance you would like to post statistics.
+2. Fill out client id, client secret and access token in `config.txt` as follows:
 
 ```
+mastodon_hostname: mastodon.social
 uc_client_id: <your client ID>
 uc_client_secret: <your client secret>
 uc_access_token: <your access token>

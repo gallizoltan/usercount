@@ -1,0 +1,4 @@
+mastodon_hostname: mastodon.social
+uc_client_id: <your client ID>
+uc_client_secret: <your client secret>
+uc_access_token: <your access token>

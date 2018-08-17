@@ -33,7 +33,7 @@ if not os.path.isfile("mastostats.csv"):
 
 # Returns the parameter from the specified file
 def get_parameter( parameter, file_path ):
-    # Check if secrets file exists
+    # Check if config file exists
     if not os.path.isfile(file_path):    
         print("File %s not found, exiting."%file_path)
         sys.exit(0)
@@ -49,15 +49,12 @@ def get_parameter( parameter, file_path ):
     sys.exit(0)
 
 def get_mastodon():
-    # Load secrets from secrets file
-    secrets_filepath = "secrets/secrets.txt"
-    uc_client_id     = get_parameter("uc_client_id",     secrets_filepath)
-    uc_client_secret = get_parameter("uc_client_secret", secrets_filepath)
-    uc_access_token  = get_parameter("uc_access_token",  secrets_filepath)
-
     # Load configuration from config file
     config_filepath = "config.txt"
     mastodon_hostname = get_parameter("mastodon_hostname", config_filepath) # E.g., mastodon.social
+    uc_client_id      = get_parameter("uc_client_id",      config_filepath)
+    uc_client_secret  = get_parameter("uc_client_secret",  config_filepath)
+    uc_access_token   = get_parameter("uc_access_token",   config_filepath)
 
     # Initialise Mastodon API
     mastodon = Mastodon(
