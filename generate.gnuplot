@@ -24,7 +24,7 @@ set xrange [time(0) - timespan:]
 # Plot 'usercount' of the past week and get bounds (for GRAPH 1 y1)
 plot "mastostats.csv" using 1:2
 #usercountlow = 0
-usercountlow = GPVAL_DATA_Y_MIN
+usercountlow = GPVAL_DATA_Y_MIN - (GPVAL_DATA_Y_MAX - GPVAL_DATA_Y_MIN)
 usercounthigh = GPVAL_DATA_Y_MAX
 
 # Plot derivative of 'usercount' of the past week and get bounds (for GRAPH 1 y2)
@@ -142,7 +142,7 @@ set lmargin lmarg
 set rmargin rmarg
 
 # Set Y axis
-set yrange [0:instanceshigh]
+set yrange [instanceslow-(instanceshigh-instanceslow):instanceshigh]
 set ylabel "Active instances" textcolor rgb "#E9967A" offset 1,0,0
 
 # Set X axis

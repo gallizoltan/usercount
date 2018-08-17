@@ -4,9 +4,7 @@ Mastodon User Count Bot
 A bot which counts users from all instances listed at [https://instances.social]
 then posts statistics to [Mastodon](https://github.com/tootsuite/mastodon).
 
-My copy is currently running at https://social.lou.lt/@mastodonusercount
-
-This is a variation of the bot by @josefkenny: https://github.com/josefkenny/usercount
+My copy is currently running at https://bitcoinhackers.org/@mastodonusercount
 
 ### Dependencies
 

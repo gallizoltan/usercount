@@ -3,7 +3,7 @@ config.txt
 
 # Generated files
 graph.png
-mastostats.csv
+mastostats.csv*
 usercount.csv
 
 # Byte-compiled / optimized / DLL files
