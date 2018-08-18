@@ -14,10 +14,10 @@ import requests       # For doing the web stuff, dummy!
 # INITIALISATION
 ###############################################################################
 
-do_upload = True
+no_upload = False
 # Run without uploading, if specified
 if '--no-upload' in sys.argv:
-    do_upload = False
+    no_upload = True
 
 # config.txt, mastostats.csv, generate.gnuplot, etc. are in the same folder as this file
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -36,7 +36,7 @@ def get_parameter( parameter, file_path ):
     # Check if config file exists
     if not os.path.isfile(file_path):    
         print("File %s not found, exiting."%file_path)
-        sys.exit(0)
+        sys.exit(1)
 
     # Find parameter in file
     with open( file_path ) as f:
@@ -46,7 +46,7 @@ def get_parameter( parameter, file_path ):
 
     # Cannot find parameter, exit
     print(file_path + "  Missing parameter %s "%parameter)
-    sys.exit(0)
+    sys.exit(1)
 
 def get_mastodon():
     # Load configuration from config file
@@ -74,7 +74,7 @@ ts = int(time.time())
 
 page = requests.get('https://instances.social/instances.json')
 
-instances = json.loads(page.content)
+instances = json.loads(page.content.decode('utf-8'))
 
 user_count = 0
 instance_count = 0
@@ -171,31 +171,32 @@ FNULL = open(os.devnull, 'w')
 call(["gnuplot", "generate.gnuplot"], stdout=FNULL, stderr=FNULL)
 
 
-if do_upload:
-    mastodon = get_mastodon()
-    # Upload chart
-    file_to_upload = 'graph.png'
-
-    print("Uploading %s..."%file_to_upload)
-    media_dict = mastodon.media_post(file_to_upload)
-
-    print("Uploaded file, returned:")
-    print(str(media_dict))
-
-    ###############################################################################
-    # T  O  O  T !
-    ###############################################################################
-
-    toot_text = format(user_count, ",d") + " accounts \n"
-    toot_text += hourly_change_string
-    toot_text += daily_change_string
-    toot_text += weekly_change_string
-
-    print("Tooting...")
-    print(toot_text, end='')
-
-    mastodon.status_post(toot_text, in_reply_to_id=None, media_ids=[media_dict] )
-
-    print("Successfully tooted!")
-else:
+if no_upload:
     print("--no-upload specified, so not uploading anything")
+    sys.exit(0)
+
+mastodon = get_mastodon()
+# Upload chart
+file_to_upload = 'graph.png'
+
+print("Uploading %s..."%file_to_upload)
+media_dict = mastodon.media_post(file_to_upload)
+
+print("Uploaded file, returned:")
+print(str(media_dict))
+
+###############################################################################
+# T  O  O  T !
+###############################################################################
+
+toot_text = format(user_count, ",d") + " accounts \n"
+toot_text += hourly_change_string
+toot_text += daily_change_string
+toot_text += weekly_change_string
+
+print("Tooting...")
+print(toot_text, end='')
+
+mastodon.status_post(toot_text, in_reply_to_id=None, media_ids=[media_dict] )
+
+print("Successfully tooted!")

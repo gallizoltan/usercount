@@ -1,16 +1,16 @@
 Mastodon User Count Bot
 =======================
 
-A bot which counts users from all instances listed at [https://instances.social]
+A bot which counts users from all instances listed at https://instances.social
 then posts statistics to [Mastodon](https://github.com/tootsuite/mastodon).
 
 My copy is currently running at https://bitcoinhackers.org/@mastodonusercount
 
 ### Dependencies
 
--   **Python 2**
+-   **Python 2 or 3**
 -   [gnuplot](http://www.gnuplot.info/) version 5 or greater, for example: `sudo apt install gnuplot5-qt`
--   [Mastodon.py](https://github.com/halcy/Mastodon.py): `pip install Mastodon.py`
+-   [Mastodon.py](https://github.com/halcy/Mastodon.py): `pip install Mastodon.py` or `pip3 install Mastodon.py` according to what Python version you are using
 -   Everything else at the top of `usercount.py`!
 
 ### Usage:
