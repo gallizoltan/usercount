@@ -4,7 +4,7 @@ config.txt
 # Generated files
 graph.png
 mastostats.csv*
-usercount.csv
+usercount.err
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

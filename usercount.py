@@ -1,14 +1,14 @@
 #!/usr/bin/python
 
+from __future__ import print_function
 from subprocess import call
 from mastodon import Mastodon
 import csv
 import os
 import json
-import time
+import time, datetime
 import sys
 import requests       # For doing the web stuff, dummy!
-
 
 ###############################################################################
 # INITIALISATION
@@ -20,7 +20,7 @@ if '--no-upload' in sys.argv:
     do_upload = False
 
 # config.txt, mastostats.csv, generate.gnuplot, etc. are in the same folder as this file
-os.chdir(os.path.dirname(__file__))
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 # Check mastostats.csv exists, if not, create it
 if not os.path.isfile("mastostats.csv"):    
@@ -78,17 +78,14 @@ instances = json.loads(page.content)
 
 user_count = 0
 instance_count = 0
-print(" === Leading instances ===")
 for instance in instances:
     if not "users" in instance: continue
     if instance["users"] == None: continue
     user_count += instance["users"]
-    if instance["users"] > 1000:
-        print(instance["name"] + ": " + str(instance["users"]))
     if instance["up"] == True:
         instance_count += 1
 
-print("\nNumber of users: %s " % user_count)
+print("Number of users: %s " % user_count)
 print("Number of instances: %s " % instance_count)
 
 ###############################################################################
@@ -116,6 +113,13 @@ def find_closest_timestamp( input_dict, seek_timestamp ):
         a.append( item['timestamp'] )
     return input_dict[ min(range(len(a)), key=lambda i: abs(a[i]-seek_timestamp)) ]
 
+def print_instance_info(msg):
+    print(msg + " at: " + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file=sys.stderr)
+    print("Instance info:", file=sys.stderr)
+    for instance in instances:
+        if not "users" in instance: continue
+        if instance["users"] == None: continue
+        print(instance["name"].encode('utf-8') + ": " + str(instance["users"]), file=sys.stderr)
 
 # Calculate difference in times
 hourly_change_string = ""
@@ -131,16 +135,20 @@ if len(usercount_dict) > 2:
     one_hour_ago_ts = ts - one_hour
     one_hour_ago_val = find_closest_timestamp( usercount_dict, one_hour_ago_ts )
     hourly_change = user_count - one_hour_ago_val['usercount']
-    print "Hourly change %s"%hourly_change
+    print("Hourly change %s"%hourly_change)
     if hourly_change > 0:
         hourly_change_string = "+" + format(hourly_change, ",d") + " in the last hour\n"
+        if hourly_change > user_count / 100:
+            print_instance_info("User count suspiciously increased")
+    if hourly_change < 0:
+        print_instance_info("User count decreased")
 
 # Daily change
 if len(usercount_dict) > 24:
     one_day_ago_ts = ts - one_day
     one_day_ago_val = find_closest_timestamp( usercount_dict, one_day_ago_ts )
     daily_change = user_count - one_day_ago_val['usercount']
-    print "Daily change %s"%daily_change
+    print("Daily change %s"%daily_change)
     if daily_change > 0:
         daily_change_string = "+" + format(daily_change, ",d") + " in the last day\n"
 
@@ -149,7 +157,7 @@ if len(usercount_dict) > 168:
     one_week_ago_ts = ts - one_week
     one_week_ago_val = find_closest_timestamp( usercount_dict, one_week_ago_ts )
     weekly_change = user_count - one_week_ago_val['usercount']
-    print "Weekly change %s"%weekly_change
+    print("Weekly change %s"%weekly_change)
     if weekly_change > 0:
         weekly_change_string = "+" + format(weekly_change, ",d") + " in the last week\n"
 
@@ -168,11 +176,11 @@ if do_upload:
     # Upload chart
     file_to_upload = 'graph.png'
 
-    print "Uploading %s..."%file_to_upload
+    print("Uploading %s..."%file_to_upload)
     media_dict = mastodon.media_post(file_to_upload)
 
-    print "Uploaded file, returned:"
-    print str(media_dict)
+    print("Uploaded file, returned:")
+    print(str(media_dict))
 
     ###############################################################################
     # T  O  O  T !
@@ -183,11 +191,11 @@ if do_upload:
     toot_text += daily_change_string
     toot_text += weekly_change_string
 
-    print "Tooting..." 
-    print toot_text
+    print("Tooting...")
+    print(toot_text, end='')
 
     mastodon.status_post(toot_text, in_reply_to_id=None, media_ids=[media_dict] )
 
-    print "Successfully tooted!"
+    print("Successfully tooted!")
 else:
     print("--no-upload specified, so not uploading anything")
