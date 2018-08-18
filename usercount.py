@@ -28,7 +28,7 @@ if not os.path.isfile("mastostats.csv"):
 
         # Create CSV header row
         with open("mastostats.csv", "w") as myfile:
-            myfile.write("timestamp,usercount,instancecount\n")
+            myfile.write("timestamp,usercount,instancecount,tootscount\n")
         myfile.close()
 
 # Returns the parameter from the specified file
@@ -76,17 +76,23 @@ page = requests.get('https://instances.social/instances.json')
 
 instances = json.loads(page.content.decode('utf-8'))
 
+def get_value(d, n):
+    if n not in d: return 0
+    if d[n] == None: return 0
+    return int(d[n])
+
 user_count = 0
 instance_count = 0
+toots_count = 0
 for instance in instances:
-    if not "users" in instance: continue
-    if instance["users"] == None: continue
-    user_count += instance["users"]
+    user_count += get_value(instance, "users")
+    toots_count += get_value(instance, "statuses")
     if instance["up"] == True:
         instance_count += 1
 
 print("Number of users: %s " % user_count)
 print("Number of instances: %s " % instance_count)
+print("Number of toots: %s " % toots_count)
 
 ###############################################################################
 # LOG THE DATA
@@ -94,7 +100,7 @@ print("Number of instances: %s " % instance_count)
 
 # Append to CSV file
 with open("mastostats.csv", "a") as myfile:
-    myfile.write(str(ts) + "," + str(user_count) + "," + str(instance_count) + "\n")
+    myfile.write(str(ts) + "," + str(user_count) + "," + str(instance_count) + "," + str(toots_count) + "\n")
 
 
 ###############################################################################
