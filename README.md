@@ -55,4 +55,6 @@ but hey, the above script is better than having to figure it out by yourself! ;)
 
 Call the script with the `--no-upload` argument if you don't want to upload anything.
 
+The script was designed to run once in every hour. Call with the `--no-update` argument if you run more often than one hour, so it will not collect any additional information.
+
 Note: The script will fail to output a graph until you've collected data points that are actually different!

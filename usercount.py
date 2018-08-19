@@ -19,6 +19,11 @@ no_upload = False
 if '--no-upload' in sys.argv:
     no_upload = True
 
+no_update = False
+# Run without uploading, if specified
+if '--no-update' in sys.argv:
+    no_update = True
+
 # config.txt, mastostats.csv, generate.gnuplot, etc. are in the same folder as this file
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -48,9 +53,8 @@ def get_parameter( parameter, file_path ):
     print(file_path + "  Missing parameter %s "%parameter)
     sys.exit(1)
 
-def get_mastodon():
+def get_mastodon(config_filepath):
     # Load configuration from config file
-    config_filepath = "config.txt"
     mastodon_hostname = get_parameter("mastodon_hostname", config_filepath) # E.g., mastodon.social
     uc_client_id      = get_parameter("uc_client_id",      config_filepath)
     uc_client_secret  = get_parameter("uc_client_secret",  config_filepath)
@@ -99,9 +103,11 @@ print("Number of toots: %s " % toots_count)
 ###############################################################################
 
 # Append to CSV file
-with open("mastostats.csv", "a") as myfile:
-    myfile.write(str(ts) + "," + str(user_count) + "," + str(instance_count) + "," + str(toots_count) + "\n")
-
+if no_update:
+    print("--no-update specified, so skip mastostats.csv update")
+else:
+    with open("mastostats.csv", "a") as myfile:
+        myfile.write(str(ts) + "," + str(user_count) + "," + str(instance_count) + "," + str(toots_count) + "\n")
 
 ###############################################################################
 # WORK OUT THE TOOT TEXT
@@ -181,7 +187,7 @@ if no_upload:
     print("--no-upload specified, so not uploading anything")
     sys.exit(0)
 
-mastodon = get_mastodon()
+mastodon = get_mastodon(config_filepath = "config.txt")
 # Upload chart
 file_to_upload = 'graph.png'
 
