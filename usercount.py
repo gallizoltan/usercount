@@ -185,11 +185,15 @@ mastodon = get_mastodon()
 # Upload chart
 file_to_upload = 'graph.png'
 
-print("Uploading %s..."%file_to_upload)
-media_dict = mastodon.media_post(file_to_upload)
+media_dict = None
+try:
+    print("Uploading %s..."%file_to_upload)
+    media_dict = mastodon.media_post(file_to_upload)
 
-print("Uploaded file, returned:")
-print(str(media_dict))
+    print("Uploaded file, returned:")
+    print(str(media_dict))
+except Exception as e:
+    print("Exception while uploading: " + str(e), file=sys.stderr)
 
 ###############################################################################
 # T  O  O  T !
