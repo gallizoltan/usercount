@@ -37,6 +37,11 @@ plot "mastostats.csv" using 1:3
 instanceslow  = GPVAL_DATA_Y_MIN
 instanceshigh = GPVAL_DATA_Y_MAX
 
+# Plot derivative of 'usercount' of the past week and get bounds (for GRAPH 1 y2)
+plot "mastostats.csv" using ($1):(d($4))
+tc_derivative_low = GPVAL_DATA_Y_MIN
+tc_derivative_high = GPVAL_DATA_Y_MAX
+
 ###############################################################################
 # SETUP
 ###############################################################################
@@ -121,8 +126,8 @@ set style line 12 lc rgb "#FEFEFE" lt 1 lw 5
 set grid
 
 # Plot the graph
-plot "mastostats.csv" every ::1 using 1:2 w filledcurves x1 title '' lc rgb "#2e85ad", \
-        '' u ($1):(d($2)) w filledcurves x1 title '' axes x1y2 fs transparent solid 0.7 noborder lc rgb "#7ae9d8"
+plot "mastostats.csv" every ::1 using 1:2 w filledcurves x1 title '' fs transparent solid 0.7 lc rgb "#2e85ad", \
+        '' u ($1):(d($2)) w filledcurves x1 title '' axes x1y2 fs transparent solid 0.5 noborder lc rgb "#7ae9d8"
 
 
 
@@ -130,10 +135,6 @@ plot "mastostats.csv" every ::1 using 1:2 w filledcurves x1 title '' lc rgb "#2e
 # GRAPH 2
 # Number of instances
 ###############################################################################
-
-# Unset things from the previous graph
-unset y2tics        # Remove y2 tics (only one y axis on this graph)
-unset y2label       # Remove y2 label (only one y axis on this graph)
 
 # Set bottom graph margins
 set tmargin cmarg
@@ -144,6 +145,11 @@ set rmargin rmarg
 # Set Y axis
 set yrange [instanceslow-(instanceshigh-instanceslow):instanceshigh]
 set ylabel "Active instances" textcolor rgb "#E9967A" offset 1,0,0
+
+# Set Y2 axis
+set y2range [0:tc_derivative_high * 1.2/1e3]
+set y2label 'Thousand toots per hour' textcolor rgb "#EEE8AA"
+set format y2 "%'.0f"
 
 # Set X axis
 set xdata time 
@@ -157,7 +163,8 @@ set style line 12 lc rgb "#FEFEFE" lt 1 lw 5
 set grid
 
 # Plot the graph
-plot "mastostats.csv" every ::1 using 1:3 w filledcurves x1 title '' lc rgb "#E9967A"
+plot "mastostats.csv" every ::1 using 1:3 w filledcurves x1 title '' fs transparent solid 0.7 lc rgb "#E9967A", \
+        '' u ($1):(d($4)/1e3) w filledcurves x1 title '' axes x1y2 fs transparent solid 0.5 noborder lc rgb "#EEE8AA"
 
 
 # I think this needs to be here for some reason
