@@ -15,14 +15,16 @@ My copy is currently running at https://bitcoinhackers.org/@mastodonusercount
 
 ### Usage:
 
-1. Create a file called `config.txt` to specify the hostname of the Mastodon instance you would like to post statistics.
+1. Create a file called `config.txt` to specify the hostname of the Mastodon instance you would like to post statistics. It must be in json format, see `config.txt.example`.
 2. Fill out client id, client secret and access token in `config.txt` as follows:
 
 ```
-mastodon_hostname: mastodon.social
-uc_client_id: <your client ID>
-uc_client_secret: <your client secret>
-uc_access_token: <your access token>
+{
+	"mastodon_hostname": "mastodon.social",
+	"client_id": "<your client ID>",
+	"client_secret": "<your client secret>",
+	"access_token": "<your access token>"
+}
 ```
 
 To get these values, create an account for your bot, then run this script:
