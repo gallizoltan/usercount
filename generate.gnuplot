@@ -7,10 +7,10 @@ d(y) = ($0 == 0) ? (y1 = y, 1/0) : (y2 = y1, y1 = y, y1-y2)
 # Set length of time for the entire graph
 day = 24*60*60
 week = 7*day
-timespan = week
+start_time = time(0) - week
 
 # Set tic width
-tic_width = day
+tic_width = (time(0) - start_time) / 7
 
 # We're going to be using comma-separated values, so set this up
 set datafile separator ","
@@ -19,7 +19,7 @@ set datafile separator ","
 # Interestingly, if you have your terminal set up with 'sixel' output, that's where they'll appear! Neato.
 
 # Set pre-plot settings common to each plot
-set xrange [time(0) - timespan:]
+set xrange [start_time:]
 
 # Plot 'usercount' of the past week and get bounds (for GRAPH 1 y1)
 plot "mastostats.csv" using 1:2
@@ -110,7 +110,7 @@ set format y2 "%'.0f"
 
 # Set X axis
 set xdata time
-set xrange [time(0) - timespan:]
+set xrange [start_time:]
 set timefmt "%s"
 set xlabel ""
 set autoscale xfix
@@ -153,7 +153,7 @@ set format y2 "%'.0f"
 
 # Set X axis
 set xdata time 
-set xrange [time(0) - timespan:]
+set xrange [start_time:]
 set timefmt "%s"
 set format x "%a\n%d %b"
 set xtics tic_width
