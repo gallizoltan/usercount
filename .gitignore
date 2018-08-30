@@ -5,6 +5,8 @@ config.txt*
 graph.png
 mastostats.csv*
 usercount.err*
+list.json*
+snapshot.json*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
