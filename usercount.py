@@ -59,23 +59,23 @@ def get_mastodon(config_filepath):
 # Get current timestamp
 ts = int(time.time())
 
-page = requests.get('https://instances.social/instances.json')
-
-instances = json.loads(page.content.decode('utf-8'))
-
-def get_value(d, n):
-    if n not in d: return 0
-    if d[n] == None: return 0
-    return int(d[n])
-
 user_count = 0
-instance_count = 0
 toots_count = 0
-for instance in instances:
-    user_count += get_value(instance, "users")
-    toots_count += get_value(instance, "statuses")
-    if instance["up"] == True:
-        instance_count += 1
+instance_count = 0
+
+snapshot_file="snapshot.json"
+if os.path.isfile(snapshot_file):
+	with open( snapshot_file ) as f:
+		snapshot = json.load(f)
+	for name in snapshot["data"]:
+		s = snapshot["data"][name]
+		#print(s)
+		#if s['user_count'] > 100000:
+		#	print("big name: " + name + " count " + str(s['user_count']))
+		user_count += s['user_count']
+		toots_count += s['status_count']
+		if int(snapshot["ts"]) <= int(s["ts"]) + 60*60:
+			instance_count += 1
 
 print("Number of users: %s " % user_count)
 print("Number of instances: %s " % instance_count)
@@ -108,12 +108,6 @@ def find_closest_timestamp( input_dict, seek_timestamp ):
         a.append( item['timestamp'] )
     return input_dict[ min(range(len(a)), key=lambda i: abs(a[i]-seek_timestamp)) ]
 
-def print_instance_info(msg):
-    print(msg + " at: " + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file=sys.stderr)
-    print("Instance info:", file=sys.stderr)
-    for instance in instances:
-        print(instance["name"].encode('utf-8') + ": " + str(get_value(instance, "users")), file=sys.stderr)
-
 toot_text = format(user_count, ",d") + " accounts \n"
 one_hour = 60 * 60
 hours = [1, 24, 168]
@@ -129,10 +123,6 @@ for i in range(3):
     print("%s change %s" % (prefix[i], change))
     if change > 0:
         toot_text += "+" + format(change, ",d") + " in the last " + suffix[i] + "\n"
-        if i == 0 and change > user_count / 100:
-            print_instance_info("User count suspiciously increased")
-    if i == 0 and change < 0:
-        print_instance_info("User count decreased")
 
 # Generate chart
 FNULL = open(os.devnull, 'w')
