@@ -8,9 +8,9 @@ My copy is currently running at https://bitcoinhackers.org/@mastodonusercount
 
 ### Dependencies
 
--   **Python 2 or 3**
+-   **Python 3**
 -   [gnuplot](http://www.gnuplot.info/) version 5 or greater, for example: `sudo apt install gnuplot5-qt`
--   [Mastodon.py](https://github.com/halcy/Mastodon.py): `pip install Mastodon.py` or `pip3 install Mastodon.py` according to what Python version you are using
+-   [Mastodon.py](https://github.com/halcy/Mastodon.py): `pip3 install Mastodon.py`
 -   Everything else at the top of `usercount.py`!
 
 ### Usage:
@@ -23,7 +23,8 @@ My copy is currently running at https://bitcoinhackers.org/@mastodonusercount
 	"mastodon_hostname": "mastodon.social",
 	"client_id": "<your client ID>",
 	"client_secret": "<your client secret>",
-	"access_token": "<your access token>"
+	"access_token": "<your access token>",
+	"backup_folder": "<your backup folder - optional>"
 }
 ```
 

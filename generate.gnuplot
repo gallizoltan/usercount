@@ -3,6 +3,7 @@ set term dumb
 
 # derivative functions.  Return 1/0 for first point, otherwise delta y or (delta y)/(delta x)
 d(y) = ($0 == 0) ? (y1 = y, 1/0) : (y2 = y1, y1 = y, y1-y2)
+d_smooth(y, extreme_y) = ($0 == 0) ? (y1 = y, 1/0) : (y2 = y1, y1 = y, y1-y2 > extreme_y ? 0 : y1-y2)
 
 # Set length of time for the entire graph
 day = 24*60*60
@@ -27,8 +28,13 @@ plot "mastostats.csv" using 1:2
 usercountlow = GPVAL_DATA_Y_MIN - (GPVAL_DATA_Y_MAX - GPVAL_DATA_Y_MIN)
 usercounthigh = GPVAL_DATA_Y_MAX
 
+f(x) = uc_mean
+fit f(x) "mastostats.csv" using ($1):(d($2)) via uc_mean
+uc_extreme = uc_mean * 100
+print uc_mean
+
 # Plot derivative of 'usercount' of the past week and get bounds (for GRAPH 1 y2)
-plot "mastostats.csv" using ($1):(d($2))
+plot "mastostats.csv" using ($1):(d_smooth($2, uc_extreme))
 uc_derivative_low = GPVAL_DATA_Y_MIN
 uc_derivative_high = GPVAL_DATA_Y_MAX
 
@@ -37,8 +43,13 @@ plot "mastostats.csv" using 1:3
 instanceslow  = GPVAL_DATA_Y_MIN
 instanceshigh = GPVAL_DATA_Y_MAX
 
+f(x) = tc_mean
+fit f(x) "mastostats.csv" using ($1):(d($4)) via tc_mean
+tc_extreme = tc_mean * 100
+print tc_mean
+
 # Plot derivative of 'usercount' of the past week and get bounds (for GRAPH 1 y2)
-plot "mastostats.csv" using ($1):(d($4))
+plot "mastostats.csv" using ($1):(d_smooth($4, tc_extreme))
 tc_derivative_low = GPVAL_DATA_Y_MIN
 tc_derivative_high = GPVAL_DATA_Y_MAX
 
@@ -127,7 +138,7 @@ set grid
 
 # Plot the graph
 plot "mastostats.csv" every ::1 using 1:2 w filledcurves x1 title '' fs transparent solid 0.7 lc rgb "#2e85ad", \
-        '' u ($1):(d($2)) w filledcurves x1 title '' axes x1y2 fs transparent solid 0.5 noborder lc rgb "#7ae9d8"
+        '' u ($1):(d_smooth($2, uc_extreme)) w filledcurves x1 title '' axes x1y2 fs transparent solid 0.5 noborder lc rgb "#7ae9d8"
 
 
 
@@ -164,7 +175,7 @@ set grid
 
 # Plot the graph
 plot "mastostats.csv" every ::1 using 1:3 w filledcurves x1 title '' fs transparent solid 0.7 lc rgb "#E9967A", \
-        '' u ($1):(d($4)/1e3) w filledcurves x1 title '' axes x1y2 fs transparent solid 0.5 noborder lc rgb "#EEE8AA"
+        '' u ($1):(d_smooth($4, tc_extreme)/1e3) w filledcurves x1 title '' axes x1y2 fs transparent solid 0.5 noborder lc rgb "#EEE8AA"
 
 
 # I think this needs to be here for some reason

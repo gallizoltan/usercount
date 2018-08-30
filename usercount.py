@@ -1,12 +1,11 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-from __future__ import print_function
 from subprocess import call
 from mastodon import Mastodon
 import csv
 import os
 import json
-import time, datetime
+import time
 import sys
 import requests       # For doing the web stuff, dummy!
 
@@ -56,9 +55,7 @@ def get_mastodon(config_filepath):
 # GET THE DATA
 ###############################################################################
 
-# Get current timestamp
 ts = int(time.time())
-
 user_count = 0
 toots_count = 0
 instance_count = 0
@@ -69,9 +66,6 @@ if os.path.isfile(snapshot_file):
 		snapshot = json.load(f)
 	for name in snapshot["data"]:
 		s = snapshot["data"][name]
-		#print(s)
-		#if s['user_count'] > 100000:
-		#	print("big name: " + name + " count " + str(s['user_count']))
 		user_count += s['user_count']
 		toots_count += s['status_count']
 		if int(snapshot["ts"]) <= int(s["ts"]) + 60*60:

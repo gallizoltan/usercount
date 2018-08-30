@@ -7,29 +7,27 @@ import multiprocessing
 import time
 import copy
 import sys
+import datetime
 
-generate_list = False
 if '--generate' in sys.argv:
-    generate_list = True
-
-test_mode = False
-
-if generate_list:
 	instances = {}
 	page = requests.get('https://instances.social/instances.json')
 	instances = json.loads(page.content.decode('utf-8'))
-
-	l = []
+	names = []
 	for i in instances:
 		if "name" in i:
 			beauty = i["name"].strip("/")
 			beauty = beauty[beauty.rfind("@")+1:] if beauty.rfind("@") > -1 else beauty
-			l.append(beauty)
-	l = sorted(list(set(l)))
-	json.dump(l, sys.stdout, indent=4, sort_keys=True)
+			names.append(beauty)
+	names = sorted(list(set(names)))
+	json.dump(names, sys.stdout, indent=4, sort_keys=True)
 	exit(0)
 
+start_ts = int(time.time())
+
 global_timeout = 30
+
+test_mode = False
 if test_mode:
 	global_timeout = 2
 
@@ -44,24 +42,25 @@ if "execcount" in snapshot:
 	execcount = snapshot["execcount"] + 1
 snapshot["execcount"] = execcount
 
-msg = "execcount: " + str(execcount)
+msg = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " execution count: " + str(execcount)
 if execcount % 2 == 0:
 	http_prefix = "https://"
-	msg += " using https"
+	msg += ", using https"
 else:
 	http_prefix = "http://"
-	msg += " using http"
+	msg += ", using http"
 
 if execcount % 4 < 2:
 	proxies = {}
-	msg += " using clearnet"
+	msg += " + clearnet"
 else:
-	msg += " using darknet"
+	msg += " + darknet"
 	proxies = {
 		'http': 'socks5h://127.0.0.1:9050',
 		'https': 'socks5h://127.0.0.1:9050'
 	}
 print(msg)
+print('Working', end='')
 
 def exception_wrapper(procnum, name, return_dict):
 	rv = {}
@@ -84,14 +83,13 @@ def exception_wrapper(procnum, name, return_dict):
 	return_dict[procnum] = rv
 
 def start_proc(jobs):
-	print("starting processes: " + str(len(jobs)))
+	print('.', end='')
 	for j in jobs:
 		j.start()
 
 def end_proc(jobs):
 	if len(jobs) > 0:
 		time.sleep(global_timeout + 1)
-		print("ending processes: " + str(len(jobs)))
 		for j in jobs:
 			try:
 				j.terminate()
@@ -100,18 +98,18 @@ def end_proc(jobs):
 				print(e)
 
 file_path = "list.json"
-instances = {}
+names = {}
 if os.path.isfile(file_path):
 	with open( file_path ) as f:
-		instances = json.load(f)
+		names = json.load(f)
 
 processes = []
 manager = multiprocessing.Manager()
 return_dict = manager.dict()
-for i in range(len(instances)):
-	name = instances[i]
+for i in range(len(names)):
+	name = names[i]
 	processes.append(multiprocessing.Process(target=exception_wrapper, args=(i, name, return_dict)))
-	if (i+1) % 800 == 0:
+	if (i+1) % 515 == 0:
 		start_proc(processes)
 		end_proc(processes)
 		processes = []
@@ -120,6 +118,8 @@ for i in range(len(instances)):
 
 start_proc(processes)
 end_proc(processes)
+
+print()
 
 return_dict = copy.deepcopy(return_dict)
 
@@ -138,13 +138,13 @@ for i in return_dict:
 	toots_count += rv['status_count']
 	if rv["active"] > 0:
 		instance_count += 1
-		name = instances[i]
+		name = names[i]
 		data[name] = {}
 		data[name]['user_count'] = rv['user_count']
 		data[name]['status_count'] = rv['status_count']
 		data[name]['ts'] = current_ts
 
-print("toots_count %s user_count %s instance_count %s"%(toots_count, user_count, instance_count))
+print("Toots: %s, users: %s, instances: %s"%(toots_count, user_count, instance_count))
 
 # cleanup
 #remove_list = []
@@ -156,5 +156,12 @@ print("toots_count %s user_count %s instance_count %s"%(toots_count, user_count,
 
 with open(snapshot_file, 'w') as outfile:
 	json.dump(snapshot, outfile, indent=4, sort_keys=True)
-	
-print("crawler finished")
+
+timediff = int(time.time()) - start_ts
+s = timediff % 60
+timediff = timediff / 60
+m = timediff % 60
+h = timediff / 60
+msg = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " crawler finished in "
+msg += "%02d:%02d"%(m, s)
+print(msg)
