@@ -11,7 +11,8 @@ mv usercount.log.temp usercount.log
 BACKUP=`grep backup_folder config.txt | cut -f2 -d":" | tr -d '\" '`
 if [ "$BACKUP" != "" ]
 then
-	cp mastostats.csv "$BACKUP"
-	cp snapshot.json "$BACKUP"
-	cp list.json "$BACKUP"
+	TS=`date +"%d%H"`
+	cp mastostats.csv "$BACKUP""$TS"mastostats.csv
+	cp snapshot.json "$BACKUP""$TS"snapshot.json
+	cp list.json "$BACKUP""$TS"list.json
 fi

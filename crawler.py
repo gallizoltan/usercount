@@ -27,10 +27,6 @@ start_ts = int(time.time())
 
 global_timeout = 30
 
-test_mode = False
-if test_mode:
-	global_timeout = 2
-
 snapshot = {}
 snapshot_file = "snapshot.json"
 if os.path.isfile(snapshot_file):
@@ -62,40 +58,23 @@ else:
 print(msg)
 print('Working', end='')
 
-def exception_wrapper(procnum, name, return_dict):
-	rv = {}
-	rv['status_count'] = 0
-	rv['user_count'] = 0
-	rv['active'] = 0
-	rv['uri'] = name
+def mp_worker(procnum, name, return_dict):
 	try:
 		page = requests.get(http_prefix + name + "/api/v1/instance", proxies=proxies, timeout=global_timeout)
 		instance = json.loads(page.content.decode('utf-8'))
 		toots = int(instance['stats']['status_count'])
 		users = int(instance['stats']['user_count'])
 		#print("%s %s: users: %s toots: %s"%(procnum, name, str(users), str(toots)))
+		rv = {}
 		rv['status_count'] = toots
 		rv['user_count'] = users
 		rv['active'] = 1
 		rv['uri'] = instance['uri']
+		return_dict[procnum] = rv
 	except:
 		pass
-	return_dict[procnum] = rv
-
-def start_proc(jobs):
-	print('.', end='')
-	for j in jobs:
-		j.start()
-
-def end_proc(jobs):
-	if len(jobs) > 0:
-		time.sleep(global_timeout + 1)
-		for j in jobs:
-			try:
-				j.terminate()
-				j.join()
-			except Exception as e:
-				print(e)
+	if procnum % 500 == 0:
+		print('.', end='', flush=True)
 
 file_path = "list.json"
 names = {}
@@ -103,21 +82,14 @@ if os.path.isfile(file_path):
 	with open( file_path ) as f:
 		names = json.load(f)
 
-processes = []
+args = []
 manager = multiprocessing.Manager()
 return_dict = manager.dict()
 for i in range(len(names)):
-	name = names[i]
-	processes.append(multiprocessing.Process(target=exception_wrapper, args=(i, name, return_dict)))
-	if (i+1) % 515 == 0:
-		start_proc(processes)
-		end_proc(processes)
-		processes = []
-		if test_mode:
-			break
+	args.append((i, names[i], return_dict))
 
-start_proc(processes)
-end_proc(processes)
+p = multiprocessing.Pool(500)
+p.starmap(mp_worker, args)
 
 print()
 
