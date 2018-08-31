@@ -1,6 +1,7 @@
 # We need this to make the script work on some versions of gnuplot
 set term dumb
 set fit quiet
+set fit logfile '/dev/null'
 set out "/dev/null"
 
 # derivative functions.  Return 1/0 for first point, otherwise delta y or (delta y)/(delta x)
@@ -32,9 +33,12 @@ usercounthigh = GPVAL_DATA_Y_MAX
 
 f(x) = uc_mean
 fit f(x) "mastostats.csv" using ($1):(d($2)) via uc_mean
-uc_extreme = uc_mean * 10
+uc_extreme = uc_mean * 50
+
+plot "mastostats.csv" using ($1):(d($2))
 print "Usercount mean            : ",uc_mean
 print "Usercount extreme         : ",uc_extreme
+print "Usercount max wo smooth   : ",GPVAL_DATA_Y_MAX
 
 # Plot derivative of 'usercount' of the past week and get bounds (for GRAPH 1 y2)
 plot "mastostats.csv" using ($1):(d_smooth($2, uc_extreme))
@@ -49,9 +53,12 @@ instanceshigh = GPVAL_DATA_Y_MAX
 
 f(x) = tc_mean
 fit f(x) "mastostats.csv" using ($1):(d($4)) via tc_mean
-tc_extreme = tc_mean * 10
+tc_extreme = tc_mean * 50
+
+plot "mastostats.csv" using ($1):(d($4))
 print "Tootscount mean           : ",tc_mean
 print "Tootscount extreme        : ",tc_extreme
+print "Tootscount max wo smooth  : ",GPVAL_DATA_Y_MAX
 
 # Plot derivative of 'usercount' of the past week and get bounds (for GRAPH 1 y2)
 plot "mastostats.csv" using ($1):(d_smooth($4, tc_extreme))
