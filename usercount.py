@@ -120,7 +120,7 @@ for i in range(3):
 
 # Generate chart
 FNULL = open(os.devnull, 'w')
-call(["gnuplot", "generate.gnuplot"], stdout=FNULL, stderr=FNULL)
+call(["gnuplot", "generate.gnuplot"])
 
 if no_upload:
     print("--no-upload specified, so not uploading anything")
