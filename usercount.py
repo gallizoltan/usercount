@@ -7,11 +7,6 @@ import os
 import json
 import time
 import sys
-import requests       # For doing the web stuff, dummy!
-
-###############################################################################
-# INITIALISATION
-###############################################################################
 
 no_upload = False
 if '--no-upload' in sys.argv:
@@ -20,6 +15,10 @@ if '--no-upload' in sys.argv:
 no_update = False
 if '--no-update' in sys.argv:
     no_update = True
+
+if 'q' in sys.argv or 'quiet' in sys.argv:
+    no_update = True
+    no_upload = True
 
 # config.txt, mastostats.csv, generate.gnuplot, etc. are in the same folder as this file
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -34,15 +33,15 @@ if not os.path.isfile(mastostats_csv):
         myfile.write("timestamp,usercount,instancecount,tootscount\n")
     myfile.close()
 
-def get_config(file_path):
-    if os.path.isfile(file_path):
-        with open( file_path ) as f:
+def get_config(filename):
+    if os.path.isfile(filename):
+        with open( filename ) as f:
             return json.load(f)
-    print("File %s not found, exiting."%file_path)
+    print("File %s not found, exiting."%filename, file=sys.stderr)
     sys.exit(1)
 
-def get_mastodon(config_filepath):
-    config = get_config(config_filepath)
+def get_mastodon(config_file):
+    config = get_config(config_file)
     mastodon = Mastodon(
         client_id     = config["client_id"],
         client_secret = config["client_secret"],
@@ -51,33 +50,28 @@ def get_mastodon(config_filepath):
     )
     return mastodon
 
-###############################################################################
-# GET THE DATA
-###############################################################################
-
 ts = int(time.time())
 user_count = 0
 toots_count = 0
 instance_count = 0
 
 snapshot_file="snapshot.json"
-if os.path.isfile(snapshot_file):
-	with open( snapshot_file ) as f:
-		snapshot = json.load(f)
-	for name in snapshot["data"]:
-		s = snapshot["data"][name]
-		user_count += s['user_count']
-		toots_count += s['status_count']
-		if int(snapshot["ts"]) <= int(s["ts"]) + 60*60:
-			instance_count += 1
+if not os.path.isfile(snapshot_file):
+    print("File %s not found, exiting."%snapshot_file, file=sys.stderr)
+    sys.exit(1)
+
+with open( snapshot_file ) as f:
+	snapshot = json.load(f)
+for name in snapshot["data"]:
+	s = snapshot["data"][name]
+	user_count += s['user_count']
+	toots_count += s['status_count']
+	if int(snapshot["ts"]) <= int(s["ts"]) + 60*60*3:
+		instance_count += 1
 
 print("Number of users: %s " % user_count)
-print("Number of instances: %s " % instance_count)
 print("Number of toots: %s " % toots_count)
-
-###############################################################################
-# LOG THE DATA
-###############################################################################
+print("Number of instances: %s " % instance_count)
 
 # Append to CSV file
 if no_update:
@@ -85,10 +79,6 @@ if no_update:
 else:
     with open(mastostats_csv, "a") as myfile:
         myfile.write(str(ts) + "," + str(user_count) + "," + str(instance_count) + "," + str(toots_count) + "\n")
-
-###############################################################################
-# WORK OUT THE TOOT TEXT
-###############################################################################
 
 # Load CSV file
 with open(mastostats_csv) as f:
@@ -128,7 +118,7 @@ if no_upload:
 
 # Upload chart
 file_to_upload = 'graph.png'
-mastodon = get_mastodon(config_filepath = "config.txt")
+mastodon = get_mastodon(config_file = "config.txt")
 
 media_dict = None
 try:
