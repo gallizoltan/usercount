@@ -9,20 +9,29 @@ import copy
 import sys
 import datetime
 
+file_path = "list.json"
+names = []
+if os.path.isfile(file_path):
+	with open( file_path ) as f:
+		names = json.load(f)
+
 if '--generate' in sys.argv:
 	instances = {}
 	page = requests.get('https://instances.social/instances.json')
 	instances = json.loads(page.content.decode('utf-8'))
-	names = []
+	new_names = []
 	for i in instances:
 		if "name" in i:
 			beauty = i["name"].strip("/")
 			beauty = beauty[beauty.rfind("@")+1:] if beauty.rfind("@") > -1 else beauty
 			if beauty.endswith('.'):
 				beauty = beauty[:-1]
-			names.append(beauty)
-	names = sorted(list(set(names)))
-	json.dump(names, sys.stdout, indent=4, sort_keys=True)
+			blacklisted = [s for s in names if s.endswith("--") and s.startswith(beauty)]
+			if len(blacklisted) > 0:
+				beauty = blacklisted[0]
+			new_names.append(beauty)
+	new_names = sorted(list(set(new_names).union(set(names))))
+	json.dump(new_names, sys.stdout, indent=4, sort_keys=True)
 	exit(0)
 
 start_ts = int(time.time())
@@ -74,12 +83,6 @@ def mp_worker(procnum, name, return_dict):
 		return_dict[procnum] = rv
 	except:
 		pass
-
-file_path = "list.json"
-names = {}
-if os.path.isfile(file_path):
-	with open( file_path ) as f:
-		names = json.load(f)
 
 args = []
 manager = multiprocessing.Manager()
