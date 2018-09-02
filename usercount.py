@@ -8,17 +8,27 @@ import json
 import time
 import sys
 
+def take_arg(name):
+	if name in sys.argv:
+		sys.argv.remove(name)
+		return True
+	return False
+
 no_upload = False
-if '--no-upload' in sys.argv:
+if take_arg('--no-upload'):
     no_upload = True
 
 no_update = False
-if '--no-update' in sys.argv:
+if take_arg('--no-update'):
     no_update = True
 
-if 'q' in sys.argv or 'quiet' in sys.argv:
+if take_arg('q') or take_arg('quiet'):
     no_update = True
     no_upload = True
+
+if len(sys.argv) > 1:
+	print("Invalid argument, exiting.")
+	exit(0)
 
 # config.txt, mastostats.csv, generate.gnuplot, etc. are in the same folder as this file
 os.chdir(os.path.dirname(os.path.abspath(__file__)))

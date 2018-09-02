@@ -6,8 +6,29 @@ import requests
 import multiprocessing
 import time
 import copy
-import sys
+import fcntl, sys
 import datetime
+import atexit
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+pid = os.getppid()
+cmd = open('/proc/%d/cmdline' %pid).read()
+filename, file_extension = os.path.splitext(os.path.basename(__file__))
+if os.path.basename(__file__) in cmd:
+	# most likely started from crontab
+	sys.stdout = open(filename + '.log', 'a')
+	sys.stderr = sys.stdout
+
+pid_file = filename + '.pid'
+fp = open(pid_file, 'w')
+try:
+	fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+except IOError:
+	print("Another instance is running, exiting.", file=sys.stderr)
+	sys.exit(1)
+
+atexit.register(os.remove, pid_file)
 
 file_path = "list.json"
 names = []
@@ -32,6 +53,10 @@ if '--generate' in sys.argv:
 			new_names.append(beauty)
 	new_names = sorted(list(set(new_names).union(set(names))))
 	json.dump(new_names, sys.stdout, indent=4, sort_keys=True)
+	exit(0)
+
+if len(sys.argv) > 1:
+	print("Invalid argument, exiting.")
 	exit(0)
 
 start_ts = int(time.time())
@@ -68,7 +93,7 @@ print(msg)
 print('Working', end='')
 
 def mp_worker(procnum, name, return_dict):
-	if procnum % 500 == 0:
+	if procnum % 250 == 0:
 		print('.', end='', flush=True)
 	try:
 		page = requests.get(http_prefix + name + "/api/v1/instance", proxies=proxies, timeout=30)
@@ -92,7 +117,7 @@ for i in range(len(names)):
 		continue
 	args.append((i, names[i], return_dict))
 
-p = multiprocessing.Pool(500)
+p = multiprocessing.Pool(80)
 p.starmap(mp_worker, args)
 
 print("\r", end='')
