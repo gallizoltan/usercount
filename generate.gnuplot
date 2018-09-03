@@ -123,7 +123,7 @@ set rmargin rmarg
 # Set Y axis
 set yrange [usercountlow:usercounthigh]
 set ylabel "Number of users" textcolor rgb "#93ddff" offset 2,0,0
-set decimal locale
+set decimalsign locale 'en_US.UTF-8'
 set format y "%'.0f"
 
 # Set Y2 axis
