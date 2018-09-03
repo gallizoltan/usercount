@@ -11,6 +11,7 @@ My copy is currently running at https://bitcoinhackers.org/@mastodonusercount
 -   **Python 3**
 -   [gnuplot](http://www.gnuplot.info/) version 5 or greater, for example: `sudo apt install gnuplot5-qt`
 -   [Mastodon.py](https://github.com/halcy/Mastodon.py): `pip3 install Mastodon.py`
+-   A recent version of `requests` may be needed for socks5h proxy: `sudo -H easy_install3 -U pip`, `pip3 install requests --upgrade` and `pip3 install pysocks`
 -   Everything else at the top of `usercount.py`!
 
 ### Usage:
