@@ -92,7 +92,7 @@ else:
 print(msg)
 print('Working', end='')
 
-def mp_worker(procnum, name, return_dict):
+def mp_worker(procnum, name):
 	if procnum % 250 == 0:
 		print('.', end='', flush=True)
 	try:
@@ -105,24 +105,41 @@ def mp_worker(procnum, name, return_dict):
 		rv['status_count'] = toots
 		rv['user_count'] = users
 		rv['uri'] = instance['uri']
-		return_dict[procnum] = rv
+		rv['name'] = name
+		return rv
 	except:
 		pass
 
+def close_msg(start_ts):
+	timediff = int(time.time()) - start_ts
+	s = timediff % 60
+	timediff = timediff / 60
+	m = timediff % 60
+	h = timediff / 60
+	msg = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " crawler finished in "
+	msg += "%02d:%02d"%(m, s)
+	print(msg)
+
 args = []
 manager = multiprocessing.Manager()
-return_dict = manager.dict()
 for i in range(len(names)):
 	if names[i].endswith('--'):
 		continue
-	args.append((i, names[i], return_dict))
+	args.append((i, names[i]))
 
-p = multiprocessing.Pool(80)
-p.starmap(mp_worker, args)
+pool = multiprocessing.Pool(80)
+pool_result = pool.starmap_async(mp_worker, args)
+
+results = []
+try:
+	results = pool_result.get(timeout=570)
+except Exception as e:
+	print()
+	print("Exception: Cannot get results!!!" + str(e))
+	close_msg(start_ts)
+	exit(1)
 
 print("\r", end='')
-
-return_dict = copy.deepcopy(return_dict)
 
 current_ts = int(time.time())
 snapshot["ts"] = current_ts
@@ -130,24 +147,30 @@ if "data" not in snapshot:
 	snapshot["data"] = {}
 
 def IsInData(name, data):
-	for d in data:
-		if d == name:
-			return True
+	if isinstance(data, dict):
+		for d in data:
+			if d == name:
+				return True
+	if isinstance(data, list):
+		for d in data:
+			if d != None and 'uri' in d and d['uri'] == name:
+				return True
 	return False
 
 user_count = 0
 toots_count = 0
 instance_count = 0
 data = snapshot["data"]
-for i in return_dict:
-	rv = return_dict[i]
-	name = names[i]
+for rv in results:
+	if rv == None:
+		continue
+	name = rv['name']
 	uri = rv['uri']
 	if uri.startswith("http://"):
 		uri = uri[7:]
 	if uri.startswith("https://"):
 		uri = uri[8:]
-	if name == uri or not IsInData(uri, return_dict):
+	if name == uri or not IsInData(uri, results):
 		user_count += rv['user_count']
 		toots_count += rv['status_count']
 		instance_count += 1
@@ -167,11 +190,4 @@ print("Toots: %s, users: %s, instances: %s"%(toots_count, user_count, instance_c
 with open(snapshot_file, 'w') as outfile:
 	json.dump(snapshot, outfile, indent=4, sort_keys=True)
 
-timediff = int(time.time()) - start_ts
-s = timediff % 60
-timediff = timediff / 60
-m = timediff % 60
-h = timediff / 60
-msg = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " crawler finished in "
-msg += "%02d:%02d"%(m, s)
-print(msg)
+close_msg(start_ts)
