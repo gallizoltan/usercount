@@ -21,33 +21,29 @@ class timeout_iterator:
 		remaining_time = self.total_timeout + self.start_ts - int(time.time())
 		return self.pool_it.next(remaining_time)
 
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
+def setup_environment():
+	os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-pid = os.getppid()
-cmd = open('/proc/%d/cmdline' %pid).read()
-filename, file_extension = os.path.splitext(os.path.basename(__file__))
-if os.path.basename(__file__) in cmd:
-	# most likely started from crontab
-	sys.stdout = open(filename + '.log', 'a')
-	sys.stderr = sys.stdout
+	pid = os.getppid()
+	cmd = open('/proc/%d/cmdline' %pid).read()
+	filename, file_extension = os.path.splitext(os.path.basename(__file__))
+	if os.path.basename(__file__) in cmd:
+		# most likely started from crontab
+		sys.stdout = open(filename + '.log', 'a')
+		sys.stderr = sys.stdout
 
-pid_file = filename + '.pid'
-fp = open(pid_file, 'w')
-try:
-	fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
-except IOError:
-	print("Another instance is running, exiting.", file=sys.stderr)
-	sys.exit(1)
+	pid_file = filename + '.pid'
 
-atexit.register(os.remove, pid_file)
+	global fp
+	fp = open(pid_file, 'w')
+	try:
+		fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+	except IOError:
+		print("Another instance is running, exiting.", file=sys.stderr)
+		sys.exit(1)
+	atexit.register(os.remove, pid_file)
 
-file_path = "list.json"
-names = []
-if os.path.isfile(file_path):
-	with open( file_path ) as f:
-		names = json.load(f)
-
-if '--generate' in sys.argv:
+def generate_list(names):
 	instances = {}
 	page = requests.get('https://instances.social/instances.json')
 	instances = json.loads(page.content.decode('utf-8'))
@@ -66,52 +62,35 @@ if '--generate' in sys.argv:
 	json.dump(new_names, sys.stdout, indent=4, sort_keys=True)
 	exit(0)
 
-if len(sys.argv) > 1:
-	print("Invalid argument, exiting.")
-	exit(0)
+def setup_request_params(execcount):
+	msg = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " execution count: " + str(execcount)
+	global http_prefix
+	if execcount % 2 == 0:
+		http_prefix = "https://"
+		msg += ", using https"
+	else:
+		http_prefix = "http://"
+		msg += ", using http"
 
-start_ts = int(time.time())
+	global proxies
+	if execcount % 4 < 2:
+		proxies = {}
+		msg += " + clearnet"
+	else:
+		msg += " + darknet"
+		proxies = {
+			'http': 'socks5h://127.0.0.1:9050',
+			'https': 'socks5h://127.0.0.1:9050'
+		}
+	print(msg)
 
-snapshot = {}
-snapshot_file = "snapshot.json"
-if os.path.isfile(snapshot_file):
-	with open( snapshot_file ) as f:
-		snapshot = json.load(f)
-
-execcount = 0
-if "execcount" in snapshot:
-	execcount = snapshot["execcount"] + 1
-snapshot["execcount"] = execcount
-
-msg = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " execution count: " + str(execcount)
-if execcount % 2 == 0:
-	http_prefix = "https://"
-	msg += ", using https"
-else:
-	http_prefix = "http://"
-	msg += ", using http"
-
-if execcount % 4 < 2:
-	proxies = {}
-	msg += " + clearnet"
-else:
-	msg += " + darknet"
-	proxies = {
-		'http': 'socks5h://127.0.0.1:9050',
-		'https': 'socks5h://127.0.0.1:9050'
-	}
-print(msg)
-
-def mp_worker(name):
+def download_one(name):
 	try:
 		page = requests.get(http_prefix + name + "/api/v1/instance", proxies=proxies, timeout=30)
 		instance = json.loads(page.content.decode('utf-8'))
-		toots = int(instance['stats']['status_count'])
-		users = int(instance['stats']['user_count'])
-		#print("%s %s: users: %s toots: %s"%(procnum, name, str(users), str(toots)))
 		rv = {}
-		rv['status_count'] = toots
-		rv['user_count'] = users
+		rv['status_count'] = int(instance['stats']['status_count'])
+		rv['user_count'] = int(instance['stats']['user_count'])
 		rv['uri'] = instance['uri']
 		rv['name'] = name
 		return rv
@@ -128,33 +107,30 @@ def close_msg(start_ts):
 	msg += "%02d:%02d"%(m, s)
 	print(msg)
 
-args = []
-for i in range(len(names)):
-	if not names[i].endswith('--'):
-		args.append(names[i])
+def download_all(names):
+	args = []
+	for i in range(len(names)):
+		if not names[i].endswith('--'):
+			args.append(names[i])
 
-pool = multiprocessing.Pool(80)
-pool_result = pool.imap_unordered(mp_worker, args)
-timeout_it = timeout_iterator(pool_result, 570)
+	pool = multiprocessing.Pool(80)
+	pool_result = pool.imap_unordered(download_one, args)
+	timeout_it = timeout_iterator(pool_result, 570)
 
-results = []
-try:
-	last_print_ts = 0
-	for i, rv in enumerate(timeout_it, 1):
-		results.append(rv)
-		current_ts = int(time.time())
-		if current_ts > last_print_ts + 1:
-			last_print_ts = current_ts
-			print('\r%d of %d done'%(i, len(args)), end='', flush=True)
-	print('\r', end='')
-except multiprocessing.context.TimeoutError as e:
-	print()
-	print("No more time left!!!" + str(e))
-
-current_ts = int(time.time())
-snapshot["ts"] = current_ts
-if "data" not in snapshot:
-	snapshot["data"] = {}
+	results = []
+	try:
+		last_print_ts = 0
+		for i, rv in enumerate(timeout_it, 1):
+			results.append(rv)
+			current_ts = int(time.time())
+			if current_ts > last_print_ts + 1:
+				last_print_ts = current_ts
+				print('\r%d of %d done'%(i, len(args)), end='', flush=True)
+		print('\r', end='')
+	except multiprocessing.context.TimeoutError as e:
+		print()
+		print("No more time left!!!" + str(e))
+	return results
 
 def IsInData(name, data):
 	if isinstance(data, dict):
@@ -167,37 +143,80 @@ def IsInData(name, data):
 				return True
 	return False
 
-user_count = 0
-toots_count = 0
-instance_count = 0
-data = snapshot["data"]
-for rv in results:
-	if rv == None:
-		continue
-	name = rv['name']
-	uri = rv['uri']
-	if uri.startswith("http://"):
-		uri = uri[7:]
-	if uri.startswith("https://"):
-		uri = uri[8:]
-	if name == uri or not IsInData(uri, results):
-		user_count += rv['user_count']
-		toots_count += rv['status_count']
-		instance_count += 1
-	if name != uri and IsInData(uri, data):
-		if IsInData(name, data):
-			print("!!! Instance %s is in the snapshot with its name and uri %s, users %s"%(name, uri, str(rv['user_count'])), file=sys.stderr)
-		else:
-			print("Instance %s is in the snapshot with its uri %s, users %s"%(name, uri, str(rv['user_count'])))
-		name = uri
-	data[name] = {}
-	data[name]['user_count'] = rv['user_count']
-	data[name]['status_count'] = rv['status_count']
-	data[name]['ts'] = current_ts
+def update_snapshot(snapshot, results):
+	current_ts = int(time.time())
+	snapshot["ts"] = current_ts
+	if "data" not in snapshot:
+		snapshot["data"] = {}
 
-print("Toots: %s, users: %s, instances: %s"%(toots_count, user_count, instance_count))
+	user_count = 0
+	toots_count = 0
+	instance_count = 0
+	data = snapshot["data"]
+	for rv in results:
+		if rv == None:
+			continue
+		name = rv['name']
+		uri = rv['uri']
+		if uri.startswith("http://"):
+			uri = uri[7:]
+		if uri.startswith("https://"):
+			uri = uri[8:]
+		if name == uri or not IsInData(uri, results):
+			user_count += rv['user_count']
+			toots_count += rv['status_count']
+			instance_count += 1
+		if name != uri and IsInData(uri, data):
+			if IsInData(name, data):
+				print("!!! Instance %s is in the snapshot with its name and uri %s, users %s"%(name, uri, str(rv['user_count'])), file=sys.stderr)
+			else:
+				print("Instance %s is in the snapshot with its uri %s, users %s"%(name, uri, str(rv['user_count'])))
+			name = uri
+		data[name] = {}
+		data[name]['user_count'] = rv['user_count']
+		data[name]['status_count'] = rv['status_count']
+		data[name]['ts'] = current_ts
 
-with open(snapshot_file, 'w') as outfile:
-	json.dump(snapshot, outfile, indent=4, sort_keys=True)
+	print("Toots: %s, users: %s, instances: %s"%(toots_count, user_count, instance_count))
 
-close_msg(start_ts)
+	snapshot_file = "snapshot.json"
+	with open(snapshot_file, 'w') as outfile:
+		json.dump(snapshot, outfile, indent=4, sort_keys=True)
+
+def main():
+	start_ts = int(time.time())
+
+	setup_environment()
+
+	file_path = "list.json"
+	names = []
+	if os.path.isfile(file_path):
+		with open( file_path ) as f:
+			names = json.load(f)
+
+	if '--generate' in sys.argv:
+		generate_list(names)
+
+	if len(sys.argv) > 1:
+		print("Invalid argument, exiting.")
+		exit(0)
+
+	snapshot = {}
+	snapshot_file = "snapshot.json"
+	if os.path.isfile(snapshot_file):
+		with open( snapshot_file ) as f:
+			snapshot = json.load(f)
+
+	execcount = 0
+	if "execcount" in snapshot:
+		execcount = snapshot["execcount"] + 1
+	snapshot["execcount"] = execcount
+
+	setup_request_params(execcount)
+
+	results = download_all(names)
+	update_snapshot(snapshot, results)
+	close_msg(start_ts)
+
+if __name__ == "__main__":
+	main()
