@@ -10,6 +10,17 @@ import fcntl, sys
 import datetime
 import atexit
 
+class timeout_iterator:
+	def __init__(self, pool_it, total_timeout):
+		self.pool_it = pool_it
+		self.total_timeout = total_timeout
+		self.start_ts = int(time.time())
+	def __iter__(self):
+		return self
+	def __next__(self):
+		remaining_time = self.total_timeout + self.start_ts - int(time.time())
+		return self.pool_it.next(remaining_time)
+
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 pid = os.getppid()
@@ -90,11 +101,8 @@ else:
 		'https': 'socks5h://127.0.0.1:9050'
 	}
 print(msg)
-print('Working', end='')
 
-def mp_worker(procnum, name):
-	if procnum % 250 == 0:
-		print('.', end='', flush=True)
+def mp_worker(name):
 	try:
 		page = requests.get(http_prefix + name + "/api/v1/instance", proxies=proxies, timeout=30)
 		instance = json.loads(page.content.decode('utf-8'))
@@ -121,25 +129,27 @@ def close_msg(start_ts):
 	print(msg)
 
 args = []
-manager = multiprocessing.Manager()
 for i in range(len(names)):
-	if names[i].endswith('--'):
-		continue
-	args.append((i, names[i]))
+	if not names[i].endswith('--'):
+		args.append(names[i])
 
 pool = multiprocessing.Pool(80)
-pool_result = pool.starmap_async(mp_worker, args)
+pool_result = pool.imap_unordered(mp_worker, args)
+timeout_it = timeout_iterator(pool_result, 570)
 
 results = []
 try:
-	results = pool_result.get(timeout=570)
-except Exception as e:
+	last_print_ts = 0
+	for i, rv in enumerate(timeout_it, 1):
+		results.append(rv)
+		current_ts = int(time.time())
+		if current_ts > last_print_ts + 1:
+			last_print_ts = current_ts
+			print('\r%d of %d done'%(i, len(args)), end='', flush=True)
+	print('\r', end='')
+except multiprocessing.context.TimeoutError as e:
 	print()
-	print("Exception: Cannot get results!!!" + str(e))
-	close_msg(start_ts)
-	exit(1)
-
-print("\r", end='')
+	print("No more time left!!!" + str(e))
 
 current_ts = int(time.time())
 snapshot["ts"] = current_ts
