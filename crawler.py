@@ -5,7 +5,6 @@ import os
 import requests
 import multiprocessing
 import time
-import copy
 import fcntl, sys
 import datetime
 import atexit
@@ -43,24 +42,25 @@ def setup_environment():
 		sys.exit(1)
 	atexit.register(os.remove, pid_file)
 
-def generate_list(names):
+def extend_list(names):
 	instances = {}
-	page = requests.get('https://instances.social/instances.json')
-	instances = json.loads(page.content.decode('utf-8'))
 	new_names = []
-	for i in instances:
-		if "name" in i:
-			beauty = i["name"].strip("/")
-			beauty = beauty[beauty.rfind("@")+1:] if beauty.rfind("@") > -1 else beauty
-			if beauty.endswith('.'):
-				beauty = beauty[:-1]
-			blacklisted = [s for s in names if s.endswith("--") and s.startswith(beauty)]
-			if len(blacklisted) > 0:
-				beauty = blacklisted[0]
-			new_names.append(beauty)
+	try:
+		page = requests.get('https://instances.social/instances.json')
+		instances = json.loads(page.content.decode('utf-8'))
+		for i in instances:
+			if "name" in i:
+				beauty = i["name"].strip("/")
+				beauty = beauty[beauty.rfind("@")+1:] if beauty.rfind("@") > -1 else beauty
+				if beauty.endswith('.'):
+					beauty = beauty[:-1]
+				if any(s.startswith(beauty) and s.endswith("--") for s in names):
+					continue
+				new_names.append(beauty)
+	except:
+		pass
 	new_names = sorted(list(set(new_names).union(set(names))))
-	json.dump(new_names, sys.stdout, indent=4, sort_keys=True)
-	exit(0)
+	return(new_names)
 
 def setup_request_params(execcount):
 	msg = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " execution count: " + str(execcount)
@@ -115,7 +115,7 @@ def download_all(names):
 
 	pool = multiprocessing.Pool(80)
 	pool_result = pool.imap_unordered(download_one, args)
-	timeout_it = timeout_iterator(pool_result, 570)
+	timeout_it = timeout_iterator(pool_result, 540)
 
 	results = []
 	try:
@@ -143,7 +143,7 @@ def IsInData(name, data):
 				return True
 	return False
 
-def update_snapshot(snapshot, results):
+def update_snapshot(snapshot, results, news):
 	current_ts = int(time.time())
 	snapshot["ts"] = current_ts
 	if "data" not in snapshot:
@@ -153,6 +153,7 @@ def update_snapshot(snapshot, results):
 	toots_count = 0
 	instance_count = 0
 	data = snapshot["data"]
+	new_names = []
 	for rv in results:
 		if rv == None:
 			continue
@@ -162,6 +163,13 @@ def update_snapshot(snapshot, results):
 			uri = uri[7:]
 		if uri.startswith("https://"):
 			uri = uri[8:]
+		if name in news:
+			if name == uri and not IsInData(name, data):
+				print("%s is automerged to list"%name)
+				new_names.append(name)
+			else:
+				print("Name: %s uri: %s cannot be automerged to list"%(name, uri))
+				continue
 		if name == uri or not IsInData(uri, results):
 			user_count += rv['user_count']
 			toots_count += rv['status_count']
@@ -182,20 +190,23 @@ def update_snapshot(snapshot, results):
 	snapshot_file = "snapshot.json"
 	with open(snapshot_file, 'w') as outfile:
 		json.dump(snapshot, outfile, indent=4, sort_keys=True)
+	return(new_names)
 
 def main():
 	start_ts = int(time.time())
 
 	setup_environment()
 
-	file_path = "list.json"
+	list_file = "list.json"
 	names = []
-	if os.path.isfile(file_path):
-		with open( file_path ) as f:
+	if os.path.isfile(list_file):
+		with open( list_file ) as f:
 			names = json.load(f)
 
 	if '--generate' in sys.argv:
-		generate_list(names)
+		extended_names = extend_list(names)
+		json.dump(extended_names, sys.stdout, indent=4, sort_keys=True)
+		exit(0)
 
 	if len(sys.argv) > 1:
 		print("Invalid argument, exiting.")
@@ -212,10 +223,19 @@ def main():
 		execcount = snapshot["execcount"] + 1
 	snapshot["execcount"] = execcount
 
+	extended_names = names
+	if execcount % 4 == 1:
+		extended_names = extend_list(names)
+
 	setup_request_params(execcount)
 
-	results = download_all(names)
-	update_snapshot(snapshot, results)
+	results = download_all(extended_names)
+	news = set(extended_names).difference(set(names))
+	new_names = update_snapshot(snapshot, results, news)
+	if len(new_names) > 0:
+		extended_names = sorted(list(set(new_names).union(set(names))))
+		with open(list_file, 'w') as outfile:
+			json.dump(extended_names, outfile, indent=4, sort_keys=True)
 	close_msg(start_ts)
 
 if __name__ == "__main__":
