@@ -63,7 +63,7 @@ def extend_list(names):
 	return(new_names)
 
 def setup_request_params(execcount):
-	msg = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " execution count: " + str(execcount)
+	msg = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " + Crawler execution count: " + str(execcount)
 	global http_prefix
 	if execcount % 2 == 0:
 		http_prefix = "https://"
@@ -103,19 +103,19 @@ def close_msg(start_ts):
 	timediff = timediff / 60
 	m = timediff % 60
 	h = timediff / 60
-	msg = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " crawler finished in "
+	msg = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " + Crawler finished in "
 	msg += "%02d:%02d"%(m, s)
 	print(msg)
 
-def download_all(names):
+def download_all(names, time_left, processes):
 	args = []
 	for i in range(len(names)):
 		if not names[i].endswith('--'):
 			args.append(names[i])
 
-	pool = multiprocessing.Pool(80)
+	pool = multiprocessing.Pool(processes)
 	pool_result = pool.imap_unordered(download_one, args)
-	timeout_it = timeout_iterator(pool_result, 540)
+	timeout_it = timeout_iterator(pool_result, time_left)
 
 	results = []
 	try:
@@ -192,16 +192,19 @@ def update_snapshot(snapshot, results, news):
 		json.dump(snapshot, outfile, indent=4, sort_keys=True)
 	return(new_names)
 
+def get_json(filename, default_value = None):
+	if os.path.isfile(filename):
+		with open( filename ) as f:
+			return json.load(f)
+	return default_value
+
 def main():
 	start_ts = int(time.time())
 
 	setup_environment()
 
 	list_file = "list.json"
-	names = []
-	if os.path.isfile(list_file):
-		with open( list_file ) as f:
-			names = json.load(f)
+	names = get_json(list_file, default_value = [])
 
 	if '--generate' in sys.argv:
 		extended_names = extend_list(names)
@@ -212,24 +215,18 @@ def main():
 		print("Invalid argument, exiting.")
 		exit(0)
 
-	snapshot = {}
 	snapshot_file = "snapshot.json"
-	if os.path.isfile(snapshot_file):
-		with open( snapshot_file ) as f:
-			snapshot = json.load(f)
+	snapshot = get_json(snapshot_file, default_value = {})
 
-	execcount = 0
-	if "execcount" in snapshot:
-		execcount = snapshot["execcount"] + 1
+	execcount = snapshot.get("execcount", 0) + 1
 	snapshot["execcount"] = execcount
 
-	extended_names = names
-	if execcount % 4 == 1:
-		extended_names = extend_list(names)
+	extended_names = names if execcount % 4 != 1 else extend_list(names)
 
 	setup_request_params(execcount)
 
-	results = download_all(extended_names)
+	config = get_json("config.txt", default_value = {})
+	results = download_all(extended_names, time_left = 570 + start_ts - int(time.time()), processes = config.get("processes", 25))
 	news = set(extended_names).difference(set(names))
 	new_names = update_snapshot(snapshot, results, news)
 	if len(new_names) > 0:
