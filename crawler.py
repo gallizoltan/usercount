@@ -62,8 +62,11 @@ def extend_list(names):
 	new_names = sorted(list(set(new_names).union(set(names))))
 	return(new_names)
 
+def print_ts(msg):
+	print(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " " + msg)
+
 def setup_request_params(execcount):
-	msg = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " + Crawler execution count: " + str(execcount)
+	msg = "+ Crawler execution count: " + str(execcount)
 	global http_prefix
 	if execcount % 2 == 0:
 		http_prefix = "https://"
@@ -82,7 +85,7 @@ def setup_request_params(execcount):
 			'http': 'socks5h://127.0.0.1:9050',
 			'https': 'socks5h://127.0.0.1:9050'
 		}
-	print(msg)
+	print_ts(msg)
 
 def download_one(name):
 	try:
@@ -103,9 +106,7 @@ def close_msg(start_ts):
 	timediff = timediff / 60
 	m = timediff % 60
 	h = timediff / 60
-	msg = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " + Crawler finished in "
-	msg += "%02d:%02d"%(m, s)
-	print(msg)
+	print_ts("+ Crawler finished in %02d:%02d"%(m, s))
 
 def download_all(names, time_left, processes):
 	args = []
@@ -129,7 +130,7 @@ def download_all(names, time_left, processes):
 		print('\r', end='')
 	except multiprocessing.context.TimeoutError as e:
 		print()
-		print("No more time left!!!" + str(e))
+		print_ts("No more time left!!!" + str(e))
 	return results
 
 def IsInData(name, data):
@@ -164,11 +165,11 @@ def update_snapshot(snapshot, results, news):
 		if uri.startswith("https://"):
 			uri = uri[8:]
 		if name in news:
-			if name == uri and not IsInData(name, data):
-				print("%s is automerged to list"%name)
+			if name == uri and rv['user_count'] < 500 and not IsInData(name, data):
+				print_ts("%s is automerged to list"%name)
 				new_names.append(name)
 			else:
-				print("Name: %s uri: %s cannot be automerged to list"%(name, uri))
+				print_ts("Name: %s uri: %s cannot be automerged to list"%(name, uri))
 				continue
 		if name == uri or not IsInData(uri, results):
 			user_count += rv['user_count']
@@ -176,16 +177,16 @@ def update_snapshot(snapshot, results, news):
 			instance_count += 1
 		if name != uri and IsInData(uri, data):
 			if IsInData(name, data):
-				print("!!! Instance %s is in the snapshot with its name and uri %s, users %s"%(name, uri, str(rv['user_count'])), file=sys.stderr)
+				print_ts("Instance %s is in the snapshot with its name and uri %s, users %s!!!"%(name, uri, str(rv['user_count'])))
 			else:
-				print("Instance %s is in the snapshot with its uri %s, users %s"%(name, uri, str(rv['user_count'])))
+				print_ts("Instance %s is in the snapshot with its uri %s, users %s"%(name, uri, str(rv['user_count'])))
 			name = uri
 		data[name] = {}
 		data[name]['user_count'] = rv['user_count']
 		data[name]['status_count'] = rv['status_count']
 		data[name]['ts'] = current_ts
 
-	print("Toots: %s, users: %s, instances: %s"%(toots_count, user_count, instance_count))
+	print_ts("+ Toots: %s, users: %s, instances: %s"%(toots_count, user_count, instance_count))
 
 	snapshot_file = "snapshot.json"
 	with open(snapshot_file, 'w') as outfile:
@@ -221,9 +222,9 @@ def main():
 	execcount = snapshot.get("execcount", 0) + 1
 	snapshot["execcount"] = execcount
 
-	extended_names = names if execcount % 4 != 1 else extend_list(names)
-
 	setup_request_params(execcount)
+
+	extended_names = names if execcount % 4 != 1 else extend_list(names)
 
 	config = get_json("config.txt", default_value = {})
 	results = download_all(extended_names, time_left = 570 + start_ts - int(time.time()), processes = config.get("processes", 25))

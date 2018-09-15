@@ -8,7 +8,7 @@ date +"%Y-%m-%d %H:%M:%S" | tee -a usercount.log
 tail -9998 usercount.log > usercount.log.temp
 mv usercount.log.temp usercount.log
 
-BACKUP=`grep backup_folder config.txt | cut -f2 -d":" | tr -d '\" '`
+BACKUP=`grep backup_folder config.txt | cut -f2 -d":" | tr -d '\" ,'`
 if [ "$BACKUP" != "" ]
 then
 	TS=`date +"%d"`
