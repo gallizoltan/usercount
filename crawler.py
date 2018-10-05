@@ -165,12 +165,17 @@ def update_snapshot(snapshot, results, news):
 		if uri.startswith("https://"):
 			uri = uri[8:]
 		if name in news:
-			if name == uri and rv['user_count'] < 500 and not IsInData(name, data):
-				print_ts("%s is automerged to list"%name)
-				new_names.append(name)
-			else:
-				print_ts("Name: %s uri: %s cannot be automerged to list"%(name, uri))
+			if name != uri:
+				print_ts("Name: %s uri: %s cannot be automerged to list, name and uri differs"%(name, uri))
 				continue
+			if rv['user_count'] >= 500:
+				print_ts("Name: %s uri: %s cannot be automerged to list, too many users: %d"%(name, uri, rv['user_count']))
+				continue
+			if IsInData(name, data):
+				print_ts("Name: %s uri: %s cannot be automerged to list, name is already in the snapshot"%(name, uri))
+				continue
+			print_ts("%s is automerged to list"%name)
+			new_names.append(name)
 		if name == uri or not IsInData(uri, results):
 			user_count += rv['user_count']
 			toots_count += rv['status_count']
