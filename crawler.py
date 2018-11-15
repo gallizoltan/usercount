@@ -26,11 +26,6 @@ def setup_environment():
 	pid = os.getppid()
 	cmd = open('/proc/%d/cmdline' %pid).read()
 	filename, file_extension = os.path.splitext(os.path.basename(__file__))
-	if os.path.basename(__file__) in cmd:
-		# most likely started from crontab
-		sys.stdout = open(filename + '.log', 'a')
-		sys.stderr = sys.stdout
-
 	pid_file = filename + '.pid'
 
 	global fp
