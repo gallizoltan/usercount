@@ -24,7 +24,6 @@ def setup_environment():
 	os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 	pid = os.getppid()
-	cmd = open('/proc/%d/cmdline' %pid).read()
 	filename, file_extension = os.path.splitext(os.path.basename(__file__))
 	pid_file = filename + '.pid'
 
