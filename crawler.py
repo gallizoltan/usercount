@@ -226,7 +226,7 @@ def main():
 	extended_names = names if execcount % 4 != 1 else extend_list(names)
 
 	config = get_json("config.txt", default_value = {})
-	results = download_all(extended_names, time_left = 570 + start_ts - int(time.time()), processes = config.get("processes", 25))
+	results = download_all(extended_names, time_left = config.get("timeout", 720) + start_ts - int(time.time()), processes = config.get("processes", 25))
 	news = set(extended_names).difference(set(names))
 	new_names = update_snapshot(snapshot, results, news)
 	if len(new_names) > 0:
