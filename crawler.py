@@ -118,7 +118,7 @@ def download_all(names, time_left, processes):
 		for i, rv in enumerate(timeout_it, 1):
 			results.append(rv)
 			current_ts = int(time.time())
-			if current_ts > last_print_ts + 1:
+			if current_ts > last_print_ts + 5:
 				last_print_ts = current_ts
 				print('\r%d of %d done'%(i, len(args)), end='', flush=True)
 		print('\r', end='')
