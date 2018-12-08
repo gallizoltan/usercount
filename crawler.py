@@ -223,7 +223,7 @@ def main():
 
 	setup_request_params(execcount)
 
-	extended_names = names if execcount % 4 != 1 else extend_list(names)
+	extended_names = names if execcount % 5 != 1 else extend_list(names)
 
 	config = get_json("config.txt", default_value = {})
 	results = download_all(extended_names, time_left = config.get("timeout", 720) + start_ts - int(time.time()), processes = config.get("processes", 25))
