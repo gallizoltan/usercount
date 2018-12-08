@@ -168,7 +168,7 @@ def update_snapshot(snapshot, results, news):
 			if IsInData(name, data):
 				print_ts("Name: %s uri: %s cannot be automerged to list, name is already in the snapshot"%(name, uri))
 				continue
-			print_ts("%s is automerged to list"%name)
+			print_ts("%s is automerged to list with %d users"%(name, rv['user_count']))
 			new_names.append(name)
 		if name == uri or not IsInData(uri, results):
 			user_count += rv['user_count']
