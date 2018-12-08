@@ -9,3 +9,4 @@ list.json*
 snapshot.json*
 *.pid
 *.log
+*.err
