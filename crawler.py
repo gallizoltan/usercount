@@ -122,9 +122,8 @@ def download_all(names, time_left, processes):
 				last_print_ts = current_ts
 				print('\r%d of %d done'%(i, len(args)), end='', flush=True)
 		print('\r', end='')
-	except multiprocessing.context.TimeoutError as e:
-		print()
-		print_ts("No more time left!!!" + str(e))
+	except multiprocessing.context.TimeoutError:
+		print(", but no more time left!!!")
 	return results
 
 def IsInData(name, data):
