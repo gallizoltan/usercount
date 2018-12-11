@@ -2,7 +2,7 @@
 scritp_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $scritp_dir
 
-killall crawler.py
+killall crawler.py 2>/dev/null
 stdbuf -o L ./crawler.py $@ 2>&1 | tee -a crawler.log
 
 LOGLINES=$(grep loglines "config.txt" | cut -f2 -d":" | cut -f2 -d"\"")

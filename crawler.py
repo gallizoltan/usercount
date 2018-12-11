@@ -8,6 +8,10 @@ import time
 import fcntl, sys
 import datetime
 import atexit
+try:
+	import psutil
+except:
+	print("Run: \'pip install psutil\' to see memory consumption")
 
 class timeout_iterator:
 	def __init__(self, pool_it, total_timeout):
@@ -64,10 +68,10 @@ def setup_request_params(execcount):
 	global http_prefix
 	if execcount % 2 == 0:
 		http_prefix = "https://"
-		msg += ", using https"
+		msg += ", download via https"
 	else:
 		http_prefix = "http://"
-		msg += ", using http"
+		msg += ", download via http"
 
 	global proxies
 	if execcount % 4 < 2:
@@ -79,7 +83,7 @@ def setup_request_params(execcount):
 			'http': 'socks5h://127.0.0.1:9050',
 			'https': 'socks5h://127.0.0.1:9050'
 		}
-	print_ts(msg)
+	return msg
 
 def download_one(name):
 	try:
@@ -94,13 +98,13 @@ def download_one(name):
 	except:
 		pass
 
-def close_msg(start_ts):
+def close_msg(start_ts, memory_msg):
 	timediff = int(time.time()) - start_ts
 	s = timediff % 60
 	timediff = timediff / 60
 	m = timediff % 60
 	h = timediff / 60
-	print_ts("+ Crawler finished in %02d:%02d"%(m, s))
+	print_ts("+ Crawler finished in %02d:%02d%s"%(m, s, memory_msg))
 
 def download_all(names, time_left, processes):
 	args = []
@@ -200,6 +204,8 @@ def get_json(filename, default_value = None):
 def main():
 	start_ts = int(time.time())
 
+	if 'psutil' in sys.modules:
+		mem1 = psutil.virtual_memory()
 	setup_environment()
 
 	list_file = "list.json"
@@ -220,19 +226,27 @@ def main():
 	execcount = snapshot.get("execcount", 0) + 1
 	snapshot["execcount"] = execcount
 
-	setup_request_params(execcount)
+	msg = setup_request_params(execcount)
 
 	extended_names = names if execcount % 5 != 1 else extend_list(names)
 
 	config = get_json("config.txt", default_value = {})
-	results = download_all(extended_names, time_left = config.get("timeout", 720) + start_ts - int(time.time()), processes = config.get("processes", 25))
+	processes = config.get("processes", 25)
+	msg += " using %d threads"%processes
+	print_ts(msg)
+	results = download_all(extended_names, time_left = config.get("timeout", 720) + start_ts - int(time.time()), processes = processes)
 	news = set(extended_names).difference(set(names))
 	new_names = update_snapshot(snapshot, results, news)
 	if len(new_names) > 0:
 		extended_names = sorted(list(set(new_names).union(set(names))))
 		with open(list_file, 'w') as outfile:
 			json.dump(extended_names, outfile, indent=4, sort_keys=True)
-	close_msg(start_ts)
+	if 'psutil' in sys.modules:
+		mem2 = psutil.virtual_memory()
+		memory_msg = ", free memory: %.2fG -> %.2fG of %.2fG"%(mem1.free / 1024.0**3, mem2.free / 1024.0**3, mem2.total / 1024.0 ** 3)
+	else:
+		memory_msg = ""
+	close_msg(start_ts, memory_msg)
 
 if __name__ == "__main__":
 	main()
