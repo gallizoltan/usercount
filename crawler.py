@@ -163,13 +163,13 @@ def update_snapshot(snapshot, results, news):
 			uri = uri[8:]
 		if name in news:
 			if name != uri:
-				print_ts("Name: %s uri: %s cannot be automerged to list, name and uri differs"%(name, uri))
+				print_ts("Name: %s uri: %s cannot be automerged to list, name and uri differs, users: %d"%(name, uri, rv['user_count']))
 				continue
 			if rv['user_count'] >= 500:
 				print_ts("Name: %s uri: %s cannot be automerged to list, too many users: %d"%(name, uri, rv['user_count']))
 				continue
 			if IsInData(name, data):
-				print_ts("Name: %s uri: %s cannot be automerged to list, name is already in the snapshot"%(name, uri))
+				print_ts("Name: %s uri: %s cannot be automerged to list, name is already in the snapshot, users: %d"%(name, uri, rv['user_count']))
 				continue
 			print_ts("%s is automerged to list with %d users"%(name, rv['user_count']))
 			new_names.append(name)
@@ -179,9 +179,9 @@ def update_snapshot(snapshot, results, news):
 			instance_count += 1
 		if name != uri and IsInData(uri, data):
 			if IsInData(name, data):
-				print_ts("Instance %s is in the snapshot with its name and uri %s, users %s!!!"%(name, uri, str(rv['user_count'])))
+				print_ts("Instance %s is in the snapshot with its name and uri %s, users: %d!!!"%(name, uri, rv['user_count']))
 			else:
-				print_ts("Instance %s is in the snapshot with its uri %s, users %s"%(name, uri, str(rv['user_count'])))
+				print_ts("Instance %s is in the snapshot with its uri %s, users: %d"%(name, uri, rv['user_count']))
 			name = uri
 		data[name] = {}
 		data[name]['user_count'] = rv['user_count']
