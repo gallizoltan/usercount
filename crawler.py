@@ -52,7 +52,9 @@ def extend_list(names):
 				beauty = beauty[beauty.rfind("@")+1:] if beauty.rfind("@") > -1 else beauty
 				if beauty.endswith('.'):
 					beauty = beauty[:-1]
-				if any(s.startswith(beauty) and s.endswith("--") for s in names):
+				beauty = beauty.encode("idna").decode('utf-8')
+				forbidden = beauty + "--"
+				if any(s == forbidden for s in names):
 					continue
 				new_names.append(beauty)
 	except:
@@ -104,7 +106,7 @@ def close_msg(start_ts, memory_msg):
 	timediff = timediff / 60
 	m = timediff % 60
 	h = timediff / 60
-	print_ts("+ Crawler finished in %02d:%02d%s"%(m, s, memory_msg))
+	print_ts("+ Finished in %02d:%02d%s"%(m, s, memory_msg))
 
 def download_all(names, time_left, processes):
 	args = []
@@ -148,7 +150,7 @@ def update_snapshot(snapshot, results, news):
 		snapshot["data"] = {}
 
 	user_count = 0
-	toots_count = 0
+	status_count = 0
 	instance_count = 0
 	data = snapshot["data"]
 	new_names = []
@@ -175,7 +177,7 @@ def update_snapshot(snapshot, results, news):
 			new_names.append(name)
 		if name == uri or not IsInData(uri, results):
 			user_count += rv['user_count']
-			toots_count += rv['status_count']
+			status_count += rv['status_count']
 			instance_count += 1
 		if name != uri and IsInData(uri, data):
 			if IsInData(name, data):
@@ -188,7 +190,7 @@ def update_snapshot(snapshot, results, news):
 		data[name]['status_count'] = rv['status_count']
 		data[name]['ts'] = current_ts
 
-	print_ts("+ Toots: %s, users: %s, instances: %s"%(toots_count, user_count, instance_count))
+	print_ts("+ Toots: %s, users: %s, instances: %s"%(status_count, user_count, instance_count))
 
 	snapshot_file = "snapshot.json"
 	with open(snapshot_file, 'w') as outfile:
