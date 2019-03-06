@@ -62,3 +62,8 @@ Call the script with the `--no-upload` argument if you don't want to upload anyt
 The script was designed to run once in every hour. Call with the `--no-update` argument if you run more often than one hour, so it will not collect any additional information.
 
 Note: The script will fail to output a graph until you've collected data points that are actually different!
+
+### Tips
+If you like this project, help to keep it alive! Thank you for your support!
+
+[![tippin.me](https://badgen.net/badge/%E2%9A%A1%EF%B8%8Ftippin.me/@gallizoli/F0918E)](https://tippin.me/@gallizoli)
