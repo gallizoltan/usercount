@@ -24,8 +24,7 @@ My copy is currently running at https://bitcoinhackers.org/@mastodonusercount
 	"mastodon_hostname": "mastodon.social",
 	"client_id": "<your client ID>",
 	"client_secret": "<your client secret>",
-	"access_token": "<your access token>",
-	"backup_folder": "<your backup folder - optional>"
+	"access_token": "<your access token>"
 }
 ```
 
