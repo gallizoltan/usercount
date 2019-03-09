@@ -28,24 +28,28 @@ def get_mastodon(config_file):
 
 # Load CSV file
 mastostats_csv = "mastostats.csv"
-with open(mastostats_csv) as f:
-    usercount_dict = [{k: int(v) for k, v in row.items()}
-        for row in csv.DictReader(f, skipinitialspace=True)]
+with open(mastostats_csv, 'r') as csvfile:
+	reader = csv.reader(csvfile)
+	masto_array = [row for row in reader]
+csvfile.close()
+del masto_array[0]
 
-# Returns the timestamp,usercount pair which is closest to the specified timestamp
-def find_closest_timestamp( input_dict, seek_timestamp ):
-    a = []
-    for item in input_dict:
-        a.append( item['timestamp'] )
-    return input_dict[ min(range(len(a)), key=lambda i: abs(a[i]-seek_timestamp)) ]
+def find_closest_timestamp(input_array, seek_timestamp):
+	closest = input_array[-1]
+	for item in reversed(input_array):
+		if abs(int(closest[0])-seek_timestamp) >= abs(int(item[0])-seek_timestamp):
+			closest = item
+		else:
+			return closest
+	return closest
 
 ts = int(time.time())
-current_val = find_closest_timestamp( usercount_dict, ts )
-user_count = current_val['usercount']
+current_val = find_closest_timestamp(masto_array, ts)
+user_count = int(current_val[1])
 
 print("Number of users: %s " % user_count)
-print("Number of toots: %s " % current_val['tootscount'])
-print("Number of instances: %s " % current_val['instancecount'])
+print("Number of toots: %s " % current_val[3])
+print("Number of instances: %s " % current_val[2])
 
 toot_text = format(user_count, ",d") + " accounts \n"
 one_hour = 60 * 60
@@ -55,10 +59,10 @@ suffix = ["hour", "day", "week"]
 
 # Calculate difference in times
 for i in range(3):
-    if len(usercount_dict) <= hours[i]: continue
+    if len(masto_array) <= hours[i]: continue
     old_ts = ts - hours[i] * one_hour
-    old_val = find_closest_timestamp( usercount_dict, old_ts )
-    change = user_count - old_val['usercount']
+    old_val = find_closest_timestamp(masto_array, old_ts)
+    change = user_count - int(old_val[1])
     print("%s change %s" % (prefix[i], change))
     if change > 0:
         toot_text += "+" + format(change, ",d") + " in the last " + suffix[i] + "\n"
