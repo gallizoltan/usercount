@@ -1,10 +1,10 @@
 #!/bin/bash
-scritp_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd $scritp_dir
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd $SCRIPT_DIR
 
-echo -n "Starting at: " | tee -a publish.log
-date +"%Y-%m-%d %H:%M:%S" | tee -a publish.log
-(stdbuf -o L ./publish.py $@ 3>&1 1>&2 2>&3 | tee -a publish.err) 2>&1  | tee -a publish.log
+FILENAME=$(basename "$0" | cut -f 1 -d '.')
+echo "Starting at: "$(date +"%Y-%m-%d %H:%M:%S") | tee -a $FILENAME.log
+(stdbuf -o L ./$FILENAME.py $@ 3>&1 1>&2 2>&3 | tee -a $FILENAME.err) 2>&1  | tee -a $FILENAME.log
 
-tail -9998 publish.log > publish.log.temp
-mv publish.log.temp publish.log
+tail -9998 $FILENAME.log > $FILENAME.log.temp
+mv $FILENAME.log.temp $FILENAME.log
