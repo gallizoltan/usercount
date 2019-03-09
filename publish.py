@@ -1,27 +1,24 @@
 #!/usr/bin/python3
 
+import os, sys
+sys.dont_write_bytecode = True
 from subprocess import call
 from mastodon import Mastodon
-import json, csv
-import os, sys
 import time
-
-def get_config(filename):
-    if os.path.isfile(filename):
-        with open( filename ) as f:
-            return json.load(f)
-    print("File %s not found, exiting."%filename, file=sys.stderr)
-    sys.exit(1)
+import common
 
 def get_mastodon(config_file):
-    config = get_config(config_file)
-    mastodon = Mastodon(
-        client_id     = config["client_id"],
-        client_secret = config["client_secret"],
-        access_token  = config["access_token"],
-        api_base_url  = 'https://' + config["mastodon_hostname"] # E.g., mastodon.social
-    )
-    return mastodon
+	config = common.get_json(config_file)
+	if config == None:
+		print("File %s not found, exiting."%filename, file=sys.stderr)
+		sys.exit(1)
+	mastodon = Mastodon(
+		client_id     = config["client_id"],
+		client_secret = config["client_secret"],
+		access_token  = config["access_token"],
+		api_base_url  = 'https://' + config["mastodon_hostname"] # E.g., mastodon.social
+	)
+	return mastodon
 
 def find_closest_timestamp(input_array, seek_timestamp):
 	closest = input_array[-1]
@@ -36,12 +33,7 @@ def main():
 	# config.txt, mastostats.csv, generate.gnuplot, etc. are in the same folder as this file
 	os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-	# Load CSV file
-	mastostats_csv = "mastostats.csv"
-	with open(mastostats_csv, 'r') as csvfile:
-		reader = csv.reader(csvfile)
-		masto_array = [row for row in reader]
-	csvfile.close()
+	masto_array = common.get_mastostats()
 	del masto_array[0]
 
 	ts = int(time.time())

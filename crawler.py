@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 
-import json, csv
 import os, sys
+sys.dont_write_bytecode = True
+import json, csv
 import requests
 import multiprocessing
 import time
@@ -12,6 +13,7 @@ try:
 	import psutil
 except:
 	print("Run: \'pip install psutil\' to see memory consumption")
+import common
 
 class timeout_iterator:
 	def __init__(self, pool_it, total_timeout):
@@ -197,12 +199,6 @@ def update_snapshot(snapshot, results, news):
 		json.dump(snapshot, outfile, indent=4, sort_keys=True)
 	return(new_names)
 
-def get_json(filename, default_value = None):
-	if os.path.isfile(filename):
-		with open( filename ) as f:
-			return json.load(f)
-	return default_value
-
 def update_stats(snapshot):
 	user_count = 0
 	toots_count = 0
@@ -214,19 +210,14 @@ def update_stats(snapshot):
 		if int(snapshot["ts"]) <= int(s["ts"]) + 60*60*3:
 			instance_count += 1
 
-	mastostats_csv = "mastostats.csv"
-	masto_array = [['timestamp', 'usercount', 'instancecount', 'tootscount']]
-	if os.path.isfile(mastostats_csv):
-		with open(mastostats_csv, 'r') as csvfile:
-			reader = csv.reader(csvfile)
-			masto_array = [row for row in reader]
-		csvfile.close()
+	masto_array = common.get_mastostats()
 
 	prev_hour = datetime.now().replace(microsecond=0,second=0,minute=0)
 	next_hour_ts = int(datetime.timestamp(prev_hour))+3600
 	while masto_array[-1][0] == str(next_hour_ts):
 		del masto_array[-1]
 
+	mastostats_csv = "mastostats.csv"
 	with open(mastostats_csv, 'w') as csvfile:
 		writer = csv.writer(csvfile, lineterminator='\n')
 		for row in masto_array:
@@ -242,7 +233,7 @@ def main():
 	setup_environment()
 
 	list_file = "list.json"
-	names = get_json(list_file, default_value = [])
+	names = common.get_json(list_file, default_value = [])
 
 	if '--generate' in sys.argv:
 		extended_names = extend_list(names)
@@ -254,7 +245,7 @@ def main():
 		exit(0)
 
 	snapshot_file = "snapshot.json"
-	snapshot = get_json(snapshot_file, default_value = {})
+	snapshot = common.get_json(snapshot_file, default_value = {})
 
 	execcount = snapshot.get("execcount", 0) + 1
 	snapshot["execcount"] = execcount
@@ -263,7 +254,7 @@ def main():
 
 	extended_names = names if execcount % 5 != 1 else extend_list(names)
 
-	config = get_json("config.txt", default_value = {})
+	config = common.get_json("config.txt", default_value = {})
 	processes = config.get("processes", 25)
 	msg += " using %d threads"%processes
 	print_ts(msg)
