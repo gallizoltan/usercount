@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 
-import json
-import os
+import json, csv
+import os, sys
 import requests
 import multiprocessing
 import time
-import fcntl, sys
-import datetime
+import fcntl
+from datetime import datetime
 import atexit
 try:
 	import psutil
@@ -63,7 +63,7 @@ def extend_list(names):
 	return(new_names)
 
 def print_ts(msg):
-	print(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " " + msg)
+	print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " " + msg)
 
 def setup_request_params(execcount):
 	msg = "+ Crawler execution count: " + str(execcount)
@@ -203,6 +203,37 @@ def get_json(filename, default_value = None):
 			return json.load(f)
 	return default_value
 
+def update_stats(snapshot):
+	user_count = 0
+	toots_count = 0
+	instance_count = 0
+	for name in snapshot["data"]:
+		s = snapshot["data"][name]
+		user_count += s['user_count']
+		toots_count += s['status_count']
+		if int(snapshot["ts"]) <= int(s["ts"]) + 60*60*3:
+			instance_count += 1
+
+	mastostats_csv = "mastostats.csv"
+	masto_array = [['timestamp', 'usercount', 'instancecount', 'tootscount']]
+	if os.path.isfile(mastostats_csv):
+		with open(mastostats_csv, 'r') as csvfile:
+			reader = csv.reader(csvfile)
+			masto_array = [row for row in reader]
+		csvfile.close()
+
+	prev_hour = datetime.now().replace(microsecond=0,second=0,minute=0)
+	next_hour_ts = int(datetime.timestamp(prev_hour))+3600
+	while masto_array[-1][0] == str(next_hour_ts):
+		del masto_array[-1]
+
+	with open(mastostats_csv, 'w') as csvfile:
+		writer = csv.writer(csvfile, lineterminator='\n')
+		for row in masto_array:
+			writer.writerow(row)
+		writer.writerow([next_hour_ts, user_count, instance_count, toots_count])
+	csvfile.close()
+
 def main():
 	start_ts = int(time.time())
 
@@ -239,6 +270,7 @@ def main():
 	results = download_all(extended_names, time_left = config.get("timeout", 720) + start_ts - int(time.time()), processes = processes)
 	news = set(extended_names).difference(set(names))
 	new_names = update_snapshot(snapshot, results, news)
+	update_stats(snapshot)
 	if len(new_names) > 0:
 		extended_names = sorted(list(set(new_names).union(set(names))))
 		with open(list_file, 'w') as outfile:

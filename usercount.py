@@ -2,46 +2,12 @@
 
 from subprocess import call
 from mastodon import Mastodon
-import csv
-import os
-import json
+import json, csv
+import os, sys
 import time
-import sys
-
-def take_arg(name):
-	if name in sys.argv:
-		sys.argv.remove(name)
-		return True
-	return False
-
-no_upload = False
-if take_arg('--no-upload'):
-    no_upload = True
-
-no_update = False
-if take_arg('--no-update'):
-    no_update = True
-
-if take_arg('q') or take_arg('quiet'):
-    no_update = True
-    no_upload = True
-
-if len(sys.argv) > 1:
-	print("Invalid argument, exiting.")
-	exit(0)
 
 # config.txt, mastostats.csv, generate.gnuplot, etc. are in the same folder as this file
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
-mastostats_csv = "mastostats.csv"
-
-# Check mastostats_csv exists, if not, create it
-if not os.path.isfile(mastostats_csv):
-    print("%s does not exist, creating it..." % mastostats_csv)
-    # Create CSV header row
-    with open(mastostats_csv, "w") as myfile:
-        myfile.write("timestamp,usercount,instancecount,tootscount\n")
-    myfile.close()
 
 def get_config(filename):
     if os.path.isfile(filename):
@@ -60,37 +26,8 @@ def get_mastodon(config_file):
     )
     return mastodon
 
-ts = int(time.time())
-user_count = 0
-toots_count = 0
-instance_count = 0
-
-snapshot_file="snapshot.json"
-if not os.path.isfile(snapshot_file):
-    print("File %s not found, exiting."%snapshot_file, file=sys.stderr)
-    sys.exit(1)
-
-with open( snapshot_file ) as f:
-	snapshot = json.load(f)
-for name in snapshot["data"]:
-	s = snapshot["data"][name]
-	user_count += s['user_count']
-	toots_count += s['status_count']
-	if int(snapshot["ts"]) <= int(s["ts"]) + 60*60*3:
-		instance_count += 1
-
-print("Number of users: %s " % user_count)
-print("Number of toots: %s " % toots_count)
-print("Number of instances: %s " % instance_count)
-
-# Append to CSV file
-if no_update:
-    print("--no-update specified, so skip %s update" % mastostats_csv)
-else:
-    with open(mastostats_csv, "a") as myfile:
-        myfile.write(str(ts) + "," + str(user_count) + "," + str(instance_count) + "," + str(toots_count) + "\n")
-
 # Load CSV file
+mastostats_csv = "mastostats.csv"
 with open(mastostats_csv) as f:
     usercount_dict = [{k: int(v) for k, v in row.items()}
         for row in csv.DictReader(f, skipinitialspace=True)]
@@ -101,6 +38,14 @@ def find_closest_timestamp( input_dict, seek_timestamp ):
     for item in input_dict:
         a.append( item['timestamp'] )
     return input_dict[ min(range(len(a)), key=lambda i: abs(a[i]-seek_timestamp)) ]
+
+ts = int(time.time())
+current_val = find_closest_timestamp( usercount_dict, ts )
+user_count = current_val['usercount']
+
+print("Number of users: %s " % user_count)
+print("Number of toots: %s " % current_val['tootscount'])
+print("Number of instances: %s " % current_val['instancecount'])
 
 toot_text = format(user_count, ",d") + " accounts \n"
 one_hour = 60 * 60
@@ -121,10 +66,6 @@ for i in range(3):
 # Generate chart
 FNULL = open(os.devnull, 'w')
 call(["gnuplot", "generate.gnuplot"])
-
-if no_upload:
-    print("--no-upload specified, so not uploading anything")
-    sys.exit(0)
 
 # Upload chart
 file_to_upload = 'graph.png'
