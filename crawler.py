@@ -134,16 +134,16 @@ def download_all(names, time_left, processes):
 		print(", but no more time left!!!")
 	return results
 
-def IsInData(name, data):
+def FindInData(name, data):
 	if isinstance(data, dict):
 		for d in data:
 			if d == name:
-				return True
+				return data[name]
 	if isinstance(data, list):
 		for d in data:
-			if d != None and 'uri' in d and d['uri'] == name:
-				return True
-	return False
+			if d != None and 'name' in d and d['name'] == name:
+				return d
+	return None
 
 def update_snapshot(snapshot, results, news):
 	current_ts = int(time.time())
@@ -154,7 +154,7 @@ def update_snapshot(snapshot, results, news):
 	user_count = 0
 	status_count = 0
 	instance_count = 0
-	data = snapshot["data"]
+	sn_data = snapshot["data"]
 	new_names = []
 	for rv in results:
 		if rv == None:
@@ -172,25 +172,30 @@ def update_snapshot(snapshot, results, news):
 			if rv['user_count'] >= 500:
 				print_ts("Name: %s uri: %s cannot be automerged to list, too many users: %d"%(name, uri, rv['user_count']))
 				continue
-			if IsInData(name, data):
+			if FindInData(name, sn_data) != None:
 				print_ts("Name: %s uri: %s cannot be automerged to list, name is already in the snapshot, users: %d"%(name, uri, rv['user_count']))
 				continue
 			print_ts("%s is automerged to list with %d users"%(name, rv['user_count']))
 			new_names.append(name)
-		if name == uri or not IsInData(uri, results):
+		uri_version = FindInData(uri, results)
+		if name == uri or uri_version == None:
+			# this is the preferred case
 			user_count += rv['user_count']
 			status_count += rv['status_count']
 			instance_count += 1
-		if name != uri and IsInData(uri, data):
-			if IsInData(name, data):
-				print_ts("Instance %s is in the snapshot with its name and uri %s, users: %d!!!"%(name, uri, rv['user_count']))
-			else:
+		else:
+			print_ts("Instance %s is in the results with its name and uri %s, users: %d vs %d"%(name, uri, rv['user_count'], uri_version['user_count']))
+		if name != uri and FindInData(uri, sn_data) != None:
+			sn_version = FindInData(name, sn_data)
+			if sn_version == None:
 				print_ts("Instance %s is in the snapshot with its uri %s, users: %d"%(name, uri, rv['user_count']))
+			else:
+				print_ts("Instance %s is in the snapshot with its name and uri %s, users: %d vs %d!!!"%(name, uri, sn_version['user_count'], rv['user_count']))
 			name = uri
-		data[name] = {}
-		data[name]['user_count'] = rv['user_count']
-		data[name]['status_count'] = rv['status_count']
-		data[name]['ts'] = current_ts
+		sn_data[name] = {}
+		sn_data[name]['user_count'] = rv['user_count']
+		sn_data[name]['status_count'] = rv['status_count']
+		sn_data[name]['ts'] = current_ts
 
 	print_ts("+ Toots: %s, users: %s, instances: %s"%(status_count, user_count, instance_count))
 
