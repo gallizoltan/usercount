@@ -252,8 +252,8 @@ def main():
 	snapshot_file = "snapshot.json"
 	snapshot = common.get_json(snapshot_file, default_value = {})
 
-	execcount = snapshot.get("execcount", 0) + 1
-	snapshot["execcount"] = execcount
+	execcount = snapshot.get("execcount", 0)
+	snapshot["execcount"] = execcount + 1
 
 	msg = setup_request_params(execcount)
 
@@ -262,8 +262,14 @@ def main():
 	config = common.get_json("config.txt", default_value = {})
 	processes = config.get("processes", 25)
 	msg += " using %d threads"%processes
+	timeout = config.get("timeout", 720)
+	if isinstance(timeout, int):
+		time_left = timeout + start_ts - int(time.time())
+	else:
+		time_left = max(0, 3540 - int(time.time()) % 3600)
+	msg += ", timeout %d secs"%time_left
 	print_ts(msg)
-	results = download_all(extended_names, time_left = config.get("timeout", 720) + start_ts - int(time.time()), processes = processes)
+	results = download_all(extended_names, time_left = time_left, processes = processes)
 	news = set(extended_names).difference(set(names))
 	new_names = update_snapshot(snapshot, results, news)
 	update_stats(snapshot)

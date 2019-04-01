@@ -2,8 +2,15 @@
 scritp_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $scritp_dir
 
+echo $(date +"%Y-%m-%d %H:%M:%S")" + Crawler Quadruple started" | tee -a crawler.log
+STARTTS=$(date +'%s')
 killall crawler.py 2>/dev/null
-stdbuf -o L ./crawler.py $@ 2>&1 | tee -a crawler.log
+for i in $(seq 1 4);
+do
+	stdbuf -o L ./crawler.py $@ 2>&1 | tee -a crawler.log
+done
+
+echo $(date +"%Y-%m-%d %H:%M:%S")" + Crawler Quadruple finised in $(($(date '+%s') - $STARTTS)) s" | tee -a crawler.log
 
 LOGLINES=$(grep loglines "config.txt" | cut -f2 -d":" | cut -f2 -d"\"")
 [ -z "$LOGLINES" ] && LOGLINES="9998"
