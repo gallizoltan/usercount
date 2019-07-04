@@ -192,6 +192,10 @@ def update_snapshot(snapshot, results, news):
 			else:
 				print_ts("Instance %s is in the snapshot with its name and uri %s, users: %d vs %d!!!"%(name, uri, sn_version['user_count'], rv['user_count']))
 			name = uri
+		old_user_count = sn_data.get(name, {}).get('user_count', 0)
+		if old_user_count != 0 and rv['user_count'] > old_user_count + 1000:
+			print_ts("Unexpected growth for instance %s: %d -> %d"%(name, old_user_count, rv['user_count']))
+			continue
 		sn_data[name] = {}
 		sn_data[name]['user_count'] = rv['user_count']
 		sn_data[name]['status_count'] = rv['status_count']
