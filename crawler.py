@@ -8,6 +8,7 @@ import multiprocessing
 import time
 import fcntl
 from datetime import datetime
+import pytz
 import atexit
 try:
 	import psutil
@@ -65,7 +66,8 @@ def extend_list(names):
 	return(new_names)
 
 def print_ts(msg):
-	print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " " + msg)
+	tz = pytz.timezone('Europe/Budapest')
+	print(datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S') + " " + msg)
 
 def setup_request_params(execcount):
 	msg = "+ Crawler execution count: " + str(execcount)

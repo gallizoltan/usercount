@@ -2,6 +2,8 @@
 scritp_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $scritp_dir
 
+export TZ=Europe/Budapest
+
 echo $(date +"%Y-%m-%d %H:%M:%S")" + Crawler Quadruple started" | tee -a crawler.log
 STARTTS=$(date +'%s')
 killall crawler.py 2>/dev/null
