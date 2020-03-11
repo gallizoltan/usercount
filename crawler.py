@@ -200,6 +200,9 @@ def update_snapshot(snapshot, results, news):
 			continue
 		if old_user_count > rv['user_count']:
 			print_ts("Shrinking usercount in instance %s: %d -> %d"%(name, old_user_count, rv['user_count']))
+			if old_user_count > rv['user_count'] + 1000:
+				print_ts("Unexpected shrinking for instance %s: %d -> %d"%(name, old_user_count, rv['user_count']))
+				continue
 		sn_data[name] = {}
 		sn_data[name]['user_count'] = rv['user_count']
 		sn_data[name]['status_count'] = rv['status_count']
