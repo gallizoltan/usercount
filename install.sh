@@ -5,9 +5,13 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-apt update 
-apt install tor
-apt install python3-pip
-apt install gnuplot5-qt
+apt update
+apt install -y tor
+apt install -y python3-pip
+apt install -y gnuplot-qt
 usermod -a -G debian-tor $(whoami)
 service tor restart
+
+pip3 install Mastodon.py
+pip3 install pysocks
+pip3 install psutil

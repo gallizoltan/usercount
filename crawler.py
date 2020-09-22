@@ -13,7 +13,7 @@ import atexit
 try:
 	import psutil
 except:
-	print("Run: \'pip install psutil\' to see memory consumption")
+	print("Run: \'pip3 install psutil\' to see memory consumption")
 import common
 
 class timeout_iterator:
