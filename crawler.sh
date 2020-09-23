@@ -19,4 +19,4 @@ mv crawler.log.temp crawler.log
 tac crawler.log | grep -v "+" | grep -v "[Nn]o more time left" | grep -v " done$" | grep -v Shrinking | rev | cut -d$'\r' -f 1 | rev | uniq -f 2 | tac > crawler.err
 
 RUNNING_TIME=$(($(date '+%s') - $STARTTS))
-echo $(date +"%Y-%m-%d %H:%M:%S")" + Crawler Quadruple finised in "$(date -d @$RUNNING_TIME +"%M:%S") | tee -a crawler.log
+echo $(date +"%Y-%m-%d %H:%M:%S")" + Crawler Quadruple finished in "$(date -d @$RUNNING_TIME +"%M:%S") | tee -a crawler.log
