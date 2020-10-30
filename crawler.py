@@ -296,4 +296,7 @@ def main():
 	close_msg(start_ts, memory_msg)
 
 if __name__ == "__main__":
-	main()
+	try:
+		main()
+	except OSError:
+		print_ts("Ending with OSError.", file=sys.stderr)
