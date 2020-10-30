@@ -134,6 +134,7 @@ def download_all(names, time_left, processes):
 		print('\r', end='')
 	except multiprocessing.context.TimeoutError:
 		print(", but no more time left!!!")
+	pool.close()
 	return results
 
 def FindInData(name, data):
@@ -296,7 +297,4 @@ def main():
 	close_msg(start_ts, memory_msg)
 
 if __name__ == "__main__":
-	try:
-		main()
-	except OSError:
-		print_ts("Ending with OSError.", file=sys.stderr)
+	main()
