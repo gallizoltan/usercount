@@ -6,8 +6,9 @@ set out "/dev/null"
 set print "-"
 
 # derivative functions.  Return 1/0 for first point, otherwise delta y or (delta y)/(delta x)
-d(y) = ($0 == 0) ? (y1 = y, 1/0) : (y2 = y1, y1 = y, y1-y2)
-d_smooth(y, extreme_y) = ($0 == 0) ? (y1 = y, 1/0) : (y2 = y1, y1 = y, y1-y2 > extreme_y ? 0 : y1-y2)
+max(x, y) = x > y ? x : y
+d(y) = ($0 == 0) ? (y1 = y, 1/0) : (y2 = y1, y1 = y, max(y1-y2, 0))
+d_smooth(y, extreme_y) = ($0 == 0) ? (y1 = y, 1/0) : (y2 = y1, y1 = y, y1-y2 > extreme_y ? 0 : max(y1-y2, 0))
 
 # Set length of time for the entire graph
 day = 24*60*60
