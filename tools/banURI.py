@@ -13,9 +13,13 @@ def main():
 	list_file = "list.json"
 	names = get_json(list_file, default_value = [])
 
-	for n, i in enumerate(names):
-		if i == target:
-			names[n] = target + "--"
+	if target in names:
+		for n, i in enumerate(names):
+			if i == target:
+				names[n] = target + "--"
+	else:
+		names.append(target + "--")
+		names = sorted(names)
 
 	with open(list_file, 'w') as outfile:
 		json.dump(names, outfile, indent=4, sort_keys=True)
