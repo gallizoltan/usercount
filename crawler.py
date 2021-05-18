@@ -123,8 +123,8 @@ def download_all(names, time_left, processes):
 	timeout_it = timeout_iterator(pool_result, time_left)
 
 	results = []
+	last_print_ts = 0
 	try:
-		last_print_ts = 0
 		for i, rv in enumerate(timeout_it, 1):
 			results.append(rv)
 			current_ts = int(time.time())
@@ -133,7 +133,10 @@ def download_all(names, time_left, processes):
 				print('\r%d of %d done'%(i, len(args)), end='', flush=True)
 		print('\r', end='')
 	except multiprocessing.context.TimeoutError:
-		print(", but no more time left!!!")
+		if last_print_ts == 0:
+			print("No time for crawl!!!")
+		else:
+			print(", but no more time left!!!")
 	pool.close()
 	return results
 
