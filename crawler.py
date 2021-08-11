@@ -93,7 +93,7 @@ def setup_request_params(execcount):
 
 def download_one(name):
 	try:
-		page = requests.get(http_prefix + name + "/api/v1/instance", proxies=proxies, timeout=30)
+		page = requests.get(http_prefix + name + "/api/v1/instance", proxies=proxies, timeout=20)
 		instance = json.loads(page.content.decode('utf-8'))
 		rv = {}
 		rv['status_count'] = int(instance['stats']['status_count'])
