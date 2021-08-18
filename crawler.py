@@ -281,7 +281,7 @@ def main():
 	if isinstance(timeout, int):
 		time_left = timeout + start_ts - int(time.time())
 	else:
-		time_left = max(0, 3480 - int(time.time()) % 3600)
+		time_left = max(0, 3450 - int(time.time()) % 3600)
 	msg += ", timeout %d secs"%time_left
 	print_ts(msg)
 	results = download_all(extended_names, time_left = time_left, processes = processes)
