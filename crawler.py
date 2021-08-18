@@ -75,26 +75,35 @@ def print_ts(msg):
     print(datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S') + " " + msg)
 
 
-def setup_request_params(execcount):
-    msg = "+ Crawler execution count: " + str(execcount)
-    global http_prefix
+def execcount2str(execcount):
+    msg = ""
     if execcount % 2 == 0:
-        http_prefix = "https://"
-        msg += ", download via https"
+        msg += "https"
     else:
-        http_prefix = "http://"
-        msg += ", download via http"
-
-    global proxies
+        msg += "http"
     if execcount % 4 < 2:
-        proxies = {}
         msg += " + clearnet"
     else:
         msg += " + darknet"
+    return msg
+
+
+def setup_request_params(execcount):
+    global http_prefix
+    if execcount % 2 == 0:
+        http_prefix = "https://"
+    else:
+        http_prefix = "http://"
+    global proxies
+    if execcount % 4 < 2:
+        proxies = {}
+    else:
         proxies = {
             'http': 'socks5h://127.0.0.1:9050',
             'https': 'socks5h://127.0.0.1:9050'
         }
+    msg = "+ Crawler execution count: " + str(execcount)
+    msg += ", download via " + execcount2str(execcount)
     return msg
 
 
@@ -112,12 +121,14 @@ def download_one(name):
         pass
 
 
-def close_msg(start_ts, memory_msg):
+def close_msg(start_ts, execcount, memory_msg):
     timediff = int(time.time()) - start_ts
     s = timediff % 60
     timediff = timediff / 60
     m = timediff % 60
-    print_ts("+ Finished in %02d:%02d%s" % (m, s, memory_msg))
+    msg = "+ Finished in %02d:%02d, " % (m, s)
+    msg += execcount2str(execcount) + memory_msg
+    print_ts(msg)
 
 
 def download_all(names, time_left, processes):
@@ -309,7 +320,7 @@ def main():
         memory_msg = ", free memory: %.2fG -> %.2fG of %.2fG" % (mem1.free / 1024.0**3, mem2.free / 1024.0**3, mem2.total / 1024.0 ** 3)
     else:
         memory_msg = ""
-    close_msg(start_ts, memory_msg)
+    close_msg(start_ts, execcount, memory_msg)
 
 
 if __name__ == "__main__":
