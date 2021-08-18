@@ -93,7 +93,7 @@ def setup_request_params(execcount):
 
 def download_one(name):
 	try:
-		page = requests.get(http_prefix + name + "/api/v1/instance", proxies=proxies, timeout=20)
+		page = requests.get(http_prefix + name + "/api/v1/instance", proxies=proxies, timeout=15)
 		instance = json.loads(page.content.decode('utf-8'))
 		rv = {}
 		rv['status_count'] = int(instance['stats']['status_count'])
@@ -281,7 +281,7 @@ def main():
 	if isinstance(timeout, int):
 		time_left = timeout + start_ts - int(time.time())
 	else:
-		time_left = max(0, 3540 - int(time.time()) % 3600)
+		time_left = max(0, 3480 - int(time.time()) % 3600)
 	msg += ", timeout %d secs"%time_left
 	print_ts(msg)
 	results = download_all(extended_names, time_left = time_left, processes = processes)
