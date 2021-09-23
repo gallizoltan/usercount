@@ -2,11 +2,14 @@
 config.txt*
 
 # Generated files
+__pycache__/*
 graph.png
 mastostats.csv*
 usercount.err*
 list.json*
 snapshot.json*
-*.pid
-*.log
 *.err
+*.lock
+*.log
+*.pid
+*.pyc
