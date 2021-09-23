@@ -109,7 +109,7 @@ def setup_request_params(execcount):
 
 def download_one(name):
     try:
-        page = requests.get(http_prefix + name + "/api/v1/instance", proxies=proxies, timeout=15)
+        page = requests.get(http_prefix + name + "/api/v1/instance", proxies=proxies, timeout=request_time)
         instance = json.loads(page.content.decode('utf-8'))
         rv = {}
         rv['status_count'] = int(instance['stats']['status_count'])
@@ -301,6 +301,8 @@ def main():
     processes = config.get("processes", 25)
     msg += " using %d threads" % processes
     timeout = config.get("timeout", 720)
+    global request_time
+    request_time = config.get("request_time", 15)
     if isinstance(timeout, int):
         time_left = timeout + start_ts - int(time.time())
     else:
