@@ -36,11 +36,16 @@ class timeout_iterator:
 def setup_environment():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     filename, file_extension = os.path.splitext(os.path.basename(__file__))
-    lock_file = filename + '.lock'
+    lock_file = filename + '.pid'
     global fp
     fp = open(lock_file, 'w')
     try:
-        fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        # LOCK_EX - exclusive lock
+        # LOCK_NB - don't block when locking
+        fcntl.flock(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        fp.truncate()
+        fp.write(str(os.getpid()))
+        fp.flush()
     except IOError:
         print("Another instance is running, exiting.", file=sys.stderr)
         sys.exit(1)
