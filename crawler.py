@@ -188,6 +188,7 @@ def update_snapshot(snapshot, results, news):
     instance_count = 0
     sn_data = snapshot["data"]
     new_names = []
+    config = common.get_json("config.txt", default_value={})
     for rv in results:
         if rv is None:
             continue
@@ -227,11 +228,19 @@ def update_snapshot(snapshot, results, news):
         old_user_count = sn_data.get(name, {}).get('user_count', 0)
         if old_user_count != 0 and rv['user_count'] > old_user_count + 1000:
             print_ts("Unexpected growth for instance %s: %d -> %d" % (name, old_user_count, rv['user_count']))
+            allowed_change = config.get("allowed_change." + name, 10)
+            sn_data[name]['user_count'] += allowed_change
+            sn_data[name]['status_count'] = rv['status_count']
+            sn_data[name]['ts'] = current_ts
             continue
         if old_user_count > rv['user_count']:
             print_ts("Shrinking usercount in instance %s: %d -> %d" % (name, old_user_count, rv['user_count']))
             if old_user_count > rv['user_count'] + 1000:
                 print_ts("Unexpected shrinking for instance %s: %d -> %d" % (name, old_user_count, rv['user_count']))
+                allowed_change = config.get("allowed_change." + name, 10)
+                sn_data[name]['user_count'] -= allowed_change
+                sn_data[name]['status_count'] = rv['status_count']
+                sn_data[name]['ts'] = current_ts
                 continue
         sn_data[name] = {}
         sn_data[name]['user_count'] = rv['user_count']
