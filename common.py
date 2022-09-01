@@ -1,10 +1,11 @@
-import json, csv
+import json
+import csv
 import os
 
 
-def get_json(filename, default_value = None):
+def get_json(filename, default_value=None):
     if os.path.isfile(filename):
-        with open( filename ) as f:
+        with open(filename) as f:
             return json.load(f)
     return default_value
 
