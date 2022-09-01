@@ -1,33 +1,33 @@
 #!/usr/bin/python3
-import os, sys, json
+import os
+import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import common
 
 
 def main():
-	target = sys.argv[1]
-	print("Banning %s"%target)
-	list_file = "list.json"
-	names = common.get_json(list_file, default_value = [])
+    target = sys.argv[1]
+    print("Banning %s" % target)
+    list_file = "list.json"
+    names = common.get_json(list_file, default_value=[])
 
-	if target in names:
-		for n, i in enumerate(names):
-			if i == target:
-				names[n] = target + "--"
-	else:
-		names.append(target + "--")
-		names = sorted(names)
+    if target in names:
+        for n, i in enumerate(names):
+            if i == target:
+                names[n] = target + "--"
+    else:
+        names.append(target + "--")
+        names = sorted(names)
 
-	with open(list_file, 'w') as outfile:
-		json.dump(names, outfile, indent=4, sort_keys=True)
+    common.save_json(list_file, names)
 
-	snapshot_file = "snapshot.json"
-	snapshot = common.get_json(snapshot_file, default_value = {})
+    snapshot_file = "snapshot.json"
+    snapshot = common.get_json(snapshot_file, default_value={})
 
-	if target in snapshot["data"]:
-		del snapshot["data"][target]
-		common.save_json(snapshot_file, snapshot)
+    if target in snapshot["data"]:
+        del snapshot["data"][target]
+        common.save_json(snapshot_file, snapshot)
+
 
 if __name__ == "__main__":
-	main()
-
+    main()
