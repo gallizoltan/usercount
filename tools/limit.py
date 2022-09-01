@@ -10,7 +10,6 @@ def main():
 	print(f"Modifying change limit for {target} to {limit} per crawler run")
 	filename = "config.txt"
 	config = common.get_json("config.txt", default_value={})
-	print(config)
 	config["allowed_change." + target] = limit
 	common.save_json(filename, config)
 
