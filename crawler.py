@@ -199,15 +199,26 @@ def update_snapshot(snapshot, results, news):
         if uri.startswith("https://"):
             uri = uri[8:]
         if name in news:
-            if name != uri:
-                print_ts("Name: %s uri: %s cannot be automerged to list, name and uri differs, users: %d" % (name, uri, rv['user_count']))
-                continue
             if rv['user_count'] >= 500:
                 print_ts("Name: %s uri: %s cannot be automerged to list, too many users: %d" % (name, uri, rv['user_count']))
                 continue
             if FindInData(name, sn_data) is not None:
                 print_ts("Name: %s uri: %s cannot be automerged to list, name is already in the snapshot, users: %d" % (name, uri, rv['user_count']))
                 continue
+            if name != uri:
+                name_content = download_one(name)
+                uri_content = download_one(uri)
+                if name_content is not None and uri_content is None:
+                    print_ts("Name: %s uri: %s merge conflict resolved with using name, users: %d" % (name, uri, rv['user_count']))
+                    new_names.append(name)
+                    new_names.append(uri + "--")
+                elif name_content is None and uri_content is not None:
+                    print_ts("Name: %s uri: %s merge conflict resolved with using uri, users: %d" % (name, uri, rv['user_count']))
+                    new_names.append(name + "--")
+                    new_names.append(uri)
+                else:
+                    print_ts("Name: %s uri: %s cannot be automerged to list, name and uri differs, users: %d" % (name, uri, rv['user_count']))
+                    continue
             print_ts("%s is automerged to list with %d users" % (name, rv['user_count']))
             new_names.append(name)
         uri_version = FindInData(uri, results)
