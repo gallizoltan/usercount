@@ -240,16 +240,16 @@ def update_snapshot(snapshot, results, news):
         if old_user_count != 0 and rv['user_count'] > old_user_count + 500:
             print_ts("Unexpected growth for instance %s: %d -> %d" % (name, old_user_count, rv['user_count']))
             allowed_change = config.get("allowed_change." + name, 10)
-            sn_data[name]['user_count'] += allowed_change
+            sn_data[name]['user_count'] = min(rv['user_count'], sn_data[name]['user_count'] + allowed_change)
             sn_data[name]['status_count'] = rv['status_count']
             sn_data[name]['ts'] = current_ts
             continue
         if old_user_count > rv['user_count'] + 2:
             print_ts("Shrinking usercount in instance %s: %d -> %d" % (name, old_user_count, rv['user_count']))
-            if old_user_count > rv['user_count'] + 500:
+            allowed_change = config.get("allowed_change." + name, 10)
+            if old_user_count > rv['user_count'] + allowed_change:
                 print_ts("Unexpected shrinking for instance %s: %d -> %d" % (name, old_user_count, rv['user_count']))
-                allowed_change = config.get("allowed_change." + name, 10)
-                sn_data[name]['user_count'] -= allowed_change
+                sn_data[name]['user_count'] = max(rv['user_count'], sn_data[name]['user_count'] - allowed_change)
                 sn_data[name]['status_count'] = rv['status_count']
                 sn_data[name]['ts'] = current_ts
                 continue
