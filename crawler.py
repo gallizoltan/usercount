@@ -198,14 +198,17 @@ def update_snapshot(snapshot, results, news):
             uri = uri[7:]
         if uri.startswith("https://"):
             uri = uri[8:]
-        if name in news:
-            if rv['user_count'] >= 500:
-                print_ts("Name: %s uri: %s cannot be automerged to list, too many users: %d" % (name, uri, rv['user_count']))
-                continue
+        if name in news and len(new_names) < 100:
+            if rv['user_count'] > 500:
+                print_ts("Name: %s uri: %s has too many users: %d" % (name, uri, rv['user_count']))
+                rv['user_count'] = 500
             if FindInData(name, sn_data) is not None:
                 print_ts("Name: %s uri: %s cannot be automerged to list, name is already in the snapshot, users: %d" % (name, uri, rv['user_count']))
                 continue
-            if name != uri:
+            if name == uri:
+                print_ts("%s is automerged to list with %d users" % (name, rv['user_count']))
+                new_names.append(name)
+            else:
                 name_content = download_one(name)
                 uri_content = download_one(uri)
                 if name_content is not None and uri_content is None:
@@ -219,8 +222,6 @@ def update_snapshot(snapshot, results, news):
                 else:
                     print_ts("Name: %s uri: %s cannot be automerged to list, name and uri differs, users: %d" % (name, uri, rv['user_count']))
                     continue
-            print_ts("%s is automerged to list with %d users" % (name, rv['user_count']))
-            new_names.append(name)
         uri_version = FindInData(uri, results)
         if name == uri or uri_version is None:
             # this is the preferred case
@@ -239,14 +240,14 @@ def update_snapshot(snapshot, results, news):
         old_user_count = sn_data.get(name, {}).get('user_count', 0)
         if old_user_count != 0 and rv['user_count'] > old_user_count + 500 and rv['user_count'] > old_user_count * 1.002:
             print_ts(f"Unexpected growth for instance {name}: {old_user_count} -> {rv['user_count']} ~ {rv['user_count'] - old_user_count}")
-            allowed_change = config.get("allowed_change." + name, max(10, int(old_user_count * 0.0005)))
+            allowed_change = config.get("allowed_change." + name, max(100, int(old_user_count * 0.001)))
             sn_data[name]['user_count'] = min(rv['user_count'], sn_data[name]['user_count'] + allowed_change)
             sn_data[name]['status_count'] = rv['status_count']
             sn_data[name]['ts'] = current_ts
             continue
         if old_user_count > rv['user_count'] + 2:
             print_ts("Shrinking usercount in instance %s: %d -> %d" % (name, old_user_count, rv['user_count']))
-            allowed_change = config.get("allowed_change." + name, max(10, int(old_user_count * 0.0001)))
+            allowed_change = config.get("allowed_change." + name, max(20, int(old_user_count * 0.0002)))
             if old_user_count > rv['user_count'] + allowed_change:
                 print_ts(f"Unexpected shrinking for instance {name}: {old_user_count} -> {rv['user_count']} ~ {old_user_count - rv['user_count']}")
                 sn_data[name]['user_count'] = max(rv['user_count'], sn_data[name]['user_count'] - allowed_change)
