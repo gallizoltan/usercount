@@ -2,12 +2,13 @@
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import pytz
+from datetime import datetime
 import common
 
-
-def main():
-    target = sys.argv[1]
-    print("Banning %s" % target)
+def ban_instance(target):
+    tz = pytz.timezone('Europe/Budapest')
+    print(datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S') + " + Banning " + target)
     list_file = "list.json"
     names = common.get_json(list_file, default_value=[])
 
@@ -27,6 +28,10 @@ def main():
     if target in snapshot["data"]:
         del snapshot["data"][target]
         common.save_json(snapshot_file, snapshot)
+
+
+def main():
+    ban_instance(sys.argv[1])
 
 
 if __name__ == "__main__":

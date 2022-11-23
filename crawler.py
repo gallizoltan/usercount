@@ -17,6 +17,7 @@ try:
 except Exception:
     print("Run: \'pip3 install psutil\' to see memory consumption")
 import common
+from tools import banURI
 
 
 class timeout_iterator:
@@ -80,35 +81,28 @@ def print_ts(msg):
     print(datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S') + " " + msg)
 
 
-def execcount2str(execcount):
-    msg = ""
-    if execcount % 2 == 0:
-        msg += "https"
-    else:
-        msg += "http"
-    if execcount % 4 < 2:
-        msg += " + clearnet"
-    else:
-        msg += " + darknet"
-    return msg
-
-
-def setup_request_params(execcount):
+def setup_request_params(execcount, config):
+    clearnetOnly = config.get("clearnet", True)
+    execstr = ""
     global http_prefix
-    if execcount % 2 == 0:
+    if execcount % 2 == 0 or clearnetOnly:
         http_prefix = "https://"
+        execstr += "https"
     else:
         http_prefix = "http://"
+        execstr += "http"
     global proxies
-    if execcount % 4 < 2:
+    if execcount % 4 < 2 or clearnetOnly:
         proxies = {}
+        execstr += " + clearnet"
     else:
         proxies = {
             'http': 'socks5h://127.0.0.1:9050',
             'https': 'socks5h://127.0.0.1:9050'
         }
+        execstr += " + darknet"
     msg = "+ Crawler execution count: " + str(execcount)
-    msg += ", download via " + execcount2str(execcount)
+    msg += ", download via " + execstr
     return msg
 
 
@@ -131,16 +125,25 @@ def close_msg(start_ts, execcount, memory_msg):
     s = timediff % 60
     timediff = timediff / 60
     m = timediff % 60
-    msg = "+ Finished in %02d:%02d, " % (m, s)
-    msg += execcount2str(execcount) + memory_msg
+    msg = "+ Finished in %02d:%02d" % (m, s)
+    msg += memory_msg
     print_ts(msg)
 
 
-def download_all(names, time_left, processes):
+def filter_unreachable(name, snapshot):
+    current_ts = int(time.time())
+    ts = int(snapshot["data"].get(name, {}).get("ts", current_ts))
+    return current_ts - ts > 3600*24*7 and int((current_ts - ts) / 3600) % 23 != 0
+
+
+def download_all(names, snapshot, time_left, processes):
     args = []
     for i in range(len(names)):
-        if not names[i].endswith('--'):
-            args.append(names[i])
+        if names[i].endswith('--'):
+            continue
+        if filter_unreachable(names[i], snapshot):
+            continue
+        args.append(names[i])
 
     pool = multiprocessing.Pool(processes)
     pool_result = pool.imap_unordered(download_one, args)
@@ -188,6 +191,7 @@ def update_snapshot(snapshot, results, news):
     instance_count = 0
     sn_data = snapshot["data"]
     new_names = []
+    ban_names = []
     config = common.get_json("config.txt", default_value={})
     for rv in results:
         if rv is None:
@@ -198,7 +202,11 @@ def update_snapshot(snapshot, results, news):
             uri = uri[7:]
         if uri.startswith("https://"):
             uri = uri[8:]
-        if name in news and len(new_names) < 100:
+        if name in news:
+            if len(new_names) > 10:
+                continue
+            if rv['user_count'] < 10:
+                continue
             if rv['user_count'] > 500:
                 print_ts("Name: %s uri: %s has too many users: %d" % (name, uri, rv['user_count']))
                 rv['user_count'] = 500
@@ -230,6 +238,7 @@ def update_snapshot(snapshot, results, news):
             instance_count += 1
         else:
             print_ts("Instance %s is in the results with its name and uri %s, users: %d vs %d" % (name, uri, rv['user_count'], uri_version['user_count']))
+            ban_names.append(name)
         if name != uri and FindInData(uri, sn_data) is not None:
             sn_version = FindInData(name, sn_data)
             if sn_version is None:
@@ -264,7 +273,7 @@ def update_snapshot(snapshot, results, news):
     snapshot_file = "snapshot.json"
     with open(snapshot_file, 'w') as outfile:
         json.dump(snapshot, outfile, indent=4, sort_keys=True)
-    return(new_names)
+    return new_names, ban_names
 
 
 def update_stats(snapshot):
@@ -319,11 +328,11 @@ def main():
     execcount = snapshot.get("execcount", 0)
     snapshot["execcount"] = execcount + 1
 
-    msg = setup_request_params(execcount)
-
-    extended_names = names if execcount % 5 != 1 else extend_list(names)
-
     config = common.get_json("config.txt", default_value={})
+    msg = setup_request_params(execcount, config)
+
+    extended_names = extend_list(names)
+
     processes = config.get("processes", 25)
     msg += " using %d threads" % processes
     timeout = config.get("timeout", 720)
@@ -335,14 +344,16 @@ def main():
         time_left = max(0, 3450 - int(time.time()) % 3600)
     msg += ", timeout %d secs" % time_left
     print_ts(msg)
-    results = download_all(extended_names, time_left=time_left, processes=processes)
+    results = download_all(extended_names, snapshot, time_left=time_left, processes=processes)
     news = set(extended_names).difference(set(names))
-    new_names = update_snapshot(snapshot, results, news)
+    new_names, ban_names = update_snapshot(snapshot, results, news)
     update_stats(snapshot)
     if len(new_names) > 0:
         extended_names = sorted(list(set(new_names).union(set(names))))
         with open(list_file, 'w') as outfile:
             json.dump(extended_names, outfile, indent=4, sort_keys=True)
+    for name in ban_names:
+        banURI.ban_instance(name)
     if 'psutil' in sys.modules:
         mem2 = psutil.virtual_memory()
         memory_msg = ", free memory: %.2fG -> %.2fG of %.2fG" % (mem1.free / 1024.0**3, mem2.free / 1024.0**3, mem2.total / 1024.0 ** 3)
