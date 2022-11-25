@@ -120,13 +120,13 @@ def download_one(name):
         pass
 
 
-def close_msg(start_ts, execcount, memory_msg):
+def close_msg(start_ts, execcount, stat_msg):
     timediff = int(time.time()) - start_ts
     s = timediff % 60
     timediff = timediff / 60
     m = timediff % 60
     msg = "+ Finished in %02d:%02d" % (m, s)
-    msg += memory_msg
+    msg += stat_msg
     print_ts(msg)
 
 
@@ -165,7 +165,7 @@ def download_all(names, snapshot, time_left, processes):
         else:
             print(", but no more time left!!!")
     pool.close()
-    return results
+    return results, len(args)
 
 
 def FindInData(name, data):
@@ -344,7 +344,8 @@ def main():
         time_left = max(0, 3450 - int(time.time()) % 3600)
     msg += ", timeout %d secs" % time_left
     print_ts(msg)
-    results = download_all(extended_names, snapshot, time_left=time_left, processes=processes)
+    results, checked_instances = download_all(extended_names, snapshot, time_left=time_left, processes=processes)
+    stat_msg = f", {checked_instances}/{len(extended_names)} instance checked"
     news = set(extended_names).difference(set(names))
     new_names, ban_names = update_snapshot(snapshot, results, news)
     update_stats(snapshot)
@@ -356,10 +357,8 @@ def main():
         banURI.ban_instance(name)
     if 'psutil' in sys.modules:
         mem2 = psutil.virtual_memory()
-        memory_msg = ", free memory: %.2fG -> %.2fG of %.2fG" % (mem1.free / 1024.0**3, mem2.free / 1024.0**3, mem2.total / 1024.0 ** 3)
-    else:
-        memory_msg = ""
-    close_msg(start_ts, execcount, memory_msg)
+        stat_msg += ", free memory: %.2fG -> %.2fG of %.2fG" % (mem1.free / 1024.0**3, mem2.free / 1024.0**3, mem2.total / 1024.0 ** 3)
+    close_msg(start_ts, execcount, stat_msg)
 
 
 if __name__ == "__main__":
