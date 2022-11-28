@@ -130,20 +130,23 @@ def close_msg(start_ts, execcount, stat_msg):
     print_ts(msg)
 
 
-def filter_unreachable(name, snapshot):
+def filter_frequented(name, snapshot):
+    data = snapshot.get("data", {})
+    if name not in data:
+        return (hash(name) + snapshot.get("execcount", 0)) % 23 != 0
     current_ts = int(time.time())
-    ts = int(snapshot["data"].get(name, {}).get("ts", current_ts))
-    return current_ts - ts > 3600*24*7 and int((current_ts - ts) / 3600) % 23 != 0
+    ts = int(data.get(name, {}).get("ts", current_ts))
+    return current_ts - ts > 3600*24*7 and int((current_ts - ts) / 3600) % 49 != 0
 
 
 def download_all(names, snapshot, time_left, processes):
     args = []
-    for i in range(len(names)):
-        if names[i].endswith('--'):
+    for name in names:
+        if name.endswith('--'):
             continue
-        if filter_unreachable(names[i], snapshot):
+        if filter_frequented(name, snapshot):
             continue
-        args.append(names[i])
+        args.append(name)
 
     pool = multiprocessing.Pool(processes)
     pool_result = pool.imap_unordered(download_one, args)
