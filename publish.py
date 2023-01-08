@@ -48,6 +48,12 @@ def main():
     print("Number of instances: %s " % current_val[2])
 
     toot_text = format(user_count, ",d") + " accounts \n"
+    descriptionForAccessibility = ("Four time-based charts\n\n"
+                                   "Upper blue area: Number of Mastodon users.\n"
+                                   "Upper cyan area: Hourly increases of number of users\n"
+                                   "Lower orange area: Number of active instances\n"
+                                   "Lower yellow area: Thousand toots per hour\n\n"
+                                   "For current figures please read the text of this post.")
     one_hour = 60 * 60
     hours = [1, 24, 168]
     prefix = ["Hourly", "Daily", "Weekly"]
@@ -75,7 +81,7 @@ def main():
         try:
             media_dict = None
             print("Uploading %s..." % file_to_upload)
-            media_dict = mastodon.media_post(file_to_upload)
+            media_dict = mastodon.media_post(file_to_upload, mime_type=None, description=descriptionForAccessibility)
             print("Uploaded file, returned:")
             print(str(media_dict))
             print("Tooting...")
