@@ -9,7 +9,7 @@ My copy is currently running at https://bitcoinhackers.org/@mastodonusercount
 ### Dependencies
 
 -   **Python 3**
--   [gnuplot](http://www.gnuplot.info/) version 5 or greater, for example: `sudo apt install gnuplot5-qt` or `sudo apt install gnuplot5-x11` will work
+-   [gnuplot](http://www.gnuplot.info/) version 5 or greater, for example: `sudo apt install gnuplot5-qt` or `sudo apt install gnuplot5-x11` or `sudo apt install gnuplot-qt` will work
 -   [Mastodon.py](https://github.com/halcy/Mastodon.py): `pip3 install Mastodon.py`
 -   A recent version of `requests` is needed for socks5h proxy: you can update with `sudo -H easy_install3 -U pip`, `pip3 install requests --upgrade` and `pip3 install pysocks`
 
