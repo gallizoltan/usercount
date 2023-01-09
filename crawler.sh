@@ -3,6 +3,7 @@ scritp_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $scritp_dir
 
 export TZ=Europe/Budapest
+export PYTHONHASHSEED=42
 
 python3 -m compileall -l . > /dev/null
 cp __pycache__/common.cpython*.pyc common.pyc
