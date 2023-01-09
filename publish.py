@@ -14,10 +14,10 @@ def get_mastodon(config_file):
         print("File %s not found, exiting." % config_file, file=sys.stderr)
         sys.exit(1)
     mastodon = Mastodon(
-        client_id     = config["client_id"],
-        client_secret = config["client_secret"],
-        access_token  = config["access_token"],
-        api_base_url  = 'https://' + config["mastodon_hostname"]  # E.g., mastodon.social
+        client_id=config["client_id"],
+        client_secret=config["client_secret"],
+        access_token=config["access_token"],
+        api_base_url='https://' + config["mastodon_hostname"]  # E.g., mastodon.social
     )
     return mastodon
 
@@ -49,11 +49,11 @@ def main():
 
     toot_text = format(user_count, ",d") + " accounts \n"
     descriptionForAccessibility = ("Four time-based charts\n\n"
-                                   "Upper blue area: Number of Mastodon users.\n"
+                                   "Upper blue area: Number of Mastodon users\n"
                                    "Upper cyan area: Hourly increases of number of users\n"
                                    "Lower orange area: Number of active instances\n"
                                    "Lower yellow area: Thousand toots per hour\n\n"
-                                   "For current figures please read the text of this post.")
+                                   "For current figures please read the text of this post")
     one_hour = 60 * 60
     hours = [1, 24, 168]
     prefix = ["Hourly", "Daily", "Weekly"]
