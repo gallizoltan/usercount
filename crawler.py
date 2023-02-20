@@ -197,6 +197,7 @@ def update_snapshot(snapshot, results, news):
     ban_names = []
     config = common.get_json("config.txt", default_value={})
     for rv in results:
+      try:
         if rv is None:
             continue
         name = rv['name']
@@ -270,6 +271,8 @@ def update_snapshot(snapshot, results, news):
         sn_data[name]['user_count'] = rv['user_count']
         sn_data[name]['status_count'] = rv['status_count']
         sn_data[name]['ts'] = current_ts
+      except Exception:
+        print_ts(f"Exception: {rv}")
 
     print_ts("+ Toots: %s, users: %s, instances: %s" % (status_count, user_count, instance_count))
 
