@@ -185,7 +185,7 @@ def download_all(names, snapshot, time_left, processes):
             print("No time for crawl!!!")
         else:
             print(", but no more time left!!!")
-    pool.close()
+    pool.terminate()
     return results, len(args)
 
 
