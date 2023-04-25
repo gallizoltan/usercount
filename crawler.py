@@ -12,7 +12,7 @@ import fcntl
 from datetime import datetime
 import pytz
 import atexit
-import signal
+from functools import wraps
 try:
     import psutil
 except Exception:
@@ -21,36 +21,20 @@ import common
 from tools import banURI
 
 
-class TimeoutError(Exception):
-    def __init__(self, value="Timed Out"):
-        self.value = value
-
-    def __str__(self):
-        return repr(self.value)
-
-
-def timeout(seconds_before_timeout):
-    def decorate(f):
-        def handler(signum, frame):
-            raise TimeoutError()
-
-        def new_f(*args, **kwargs):
-            old = signal.signal(signal.SIGALRM, handler)
-            old_time_left = signal.alarm(seconds_before_timeout)
-            if 0 < old_time_left < seconds_before_timeout:  # never lengthen existing timer
-                signal.alarm(old_time_left)
-            start_time = time.time()
+def timeout(seconds):
+    def timeout_wrapper(func):
+        @wraps(func)
+        def wrapped(*args, **kwargs):
             try:
-                result = f(*args, **kwargs)
-            finally:
-                if old_time_left > 0:  # deduct f's run time from the saved timer
-                    old_time_left -= time.time() - start_time
-                signal.signal(signal.SIGALRM, old)
-                signal.alarm(old_time_left)
-            return result
-        new_f.__name__ = f.__name__
-        return new_f
-    return decorate
+                pool = multiprocessing.pool.ThreadPool(processes=1)
+                result = pool.apply_async(func, args, kwargs)
+                return result.get(timeout=seconds)
+            except multiprocessing.context.TimeoutError:
+                return None
+
+        return wrapped
+
+    return timeout_wrapper
 
 
 class timeout_iterator:
@@ -139,7 +123,7 @@ def setup_request_params(execcount, config):
     return msg
 
 
-@timeout(60)
+@timeout(seconds=60)
 def download_one(name):
     try:
         page = requests.get(http_prefix + name + "/api/v1/instance", proxies=proxies, timeout=request_time)
