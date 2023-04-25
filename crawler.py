@@ -12,7 +12,8 @@ import fcntl
 from datetime import datetime
 import pytz
 import atexit
-from functools import wraps
+import signal
+from contextlib import contextmanager
 try:
     import psutil
 except Exception:
@@ -21,20 +22,20 @@ import common
 from tools import banURI
 
 
-def timeout(seconds):
-    def timeout_wrapper(func):
-        @wraps(func)
-        def wrapped(*args, **kwargs):
-            try:
-                pool = multiprocessing.pool.ThreadPool(processes=1)
-                result = pool.apply_async(func, args, kwargs)
-                return result.get(timeout=seconds)
-            except multiprocessing.context.TimeoutError:
-                return None
+class TimeoutException(Exception):
+    pass
 
-        return wrapped
 
-    return timeout_wrapper
+@contextmanager
+def time_limit(seconds):
+    def signal_handler(signum, frame):
+        raise TimeoutException("Timed out!")
+    signal.signal(signal.SIGALRM, signal_handler)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
 
 
 class timeout_iterator:
@@ -123,17 +124,21 @@ def setup_request_params(execcount, config):
     return msg
 
 
-@timeout(seconds=60)
+def download_one_inner(name):
+    page = requests.get(http_prefix + name + "/api/v1/instance", proxies=proxies, timeout=request_time)
+    instance = json.loads(page.content.decode('utf-8'))
+    rv = {}
+    rv['status_count'] = int(instance['stats']['status_count'])
+    rv['user_count'] = int(instance['stats']['user_count'])
+    rv['uri'] = instance['uri']
+    rv['name'] = name
+    return rv
+
+
 def download_one(name):
     try:
-        page = requests.get(http_prefix + name + "/api/v1/instance", proxies=proxies, timeout=request_time)
-        instance = json.loads(page.content.decode('utf-8'))
-        rv = {}
-        rv['status_count'] = int(instance['stats']['status_count'])
-        rv['user_count'] = int(instance['stats']['user_count'])
-        rv['uri'] = instance['uri']
-        rv['name'] = name
-        return rv
+        with time_limit(request_time + 5):
+            return download_one_inner(name)
     except Exception:
         pass
 
