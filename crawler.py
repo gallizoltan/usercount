@@ -12,28 +12,12 @@ import fcntl
 from datetime import datetime
 import pytz
 import atexit
-import functools
 try:
     import psutil
 except Exception:
     print("Run: \'pip3 install psutil\' to see memory consumption")
 import common
 from tools import banURI
-
-
-def timeout(max_timeout):
-    """Timeout decorator, parameter in seconds."""
-    def timeout_decorator(item):
-        """Wrap the original function."""
-        @functools.wraps(item)
-        def func_wrapper(*args, **kwargs):
-            """Closure for function."""
-            pool = multiprocessing.pool.ThreadPool(processes=1)
-            async_result = pool.apply_async(item, args, kwargs)
-            # raises a TimeoutError if execution exceeds max_timeout
-            return async_result.get(max_timeout)
-        return func_wrapper
-    return timeout_decorator
 
 
 class timeout_iterator:
@@ -122,7 +106,6 @@ def setup_request_params(execcount, config):
     return msg
 
 
-@timeout(60)
 def download_one_inner(name):
     page = requests.get(http_prefix + name + "/api/v1/instance", proxies=proxies, timeout=request_time)
     instance = json.loads(page.content.decode('utf-8'))
