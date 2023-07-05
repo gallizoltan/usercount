@@ -12,6 +12,8 @@ import fcntl
 from datetime import datetime
 import pytz
 import atexit
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.SecurityWarning)
 try:
     import psutil
 except Exception:
