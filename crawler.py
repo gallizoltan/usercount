@@ -5,7 +5,7 @@ sys.dont_write_bytecode = True
 import os
 import json
 import csv
-import requests
+import urllib.request
 import time
 import fcntl
 from datetime import datetime
@@ -21,7 +21,7 @@ import common
 from tools import banURI
 import threading
 import concurrent.futures
-
+import socket
 
 
 def setup_environment():
@@ -47,8 +47,8 @@ def extend_list(names):
     instances = {}
     new_names = []
     try:
-        page = requests.get('https://instances.social/instances.json')
-        instances = json.loads(page.content.decode('utf-8'))
+        response = urllib.request.urlopen('https://instances.social/instances.json')
+        instances = json.loads(response.read().decode('utf-8'))
         for i in instances:
             if "name" in i:
                 beauty = i["name"].strip("/")
@@ -97,8 +97,8 @@ def setup_request_params(execcount, config):
 
 
 def download_one_inner(name):
-    page = requests.get(http_prefix + name + "/api/v1/instance", proxies=proxies, timeout=request_time)
-    instance = json.loads(page.content.decode('utf-8'))
+    response = urllib.request.urlopen(http_prefix + name + "/api/v1/instance")
+    instance = json.loads(response.read().decode('utf-8'))
     rv = {}
     rv['status_count'] = int(instance['stats']['status_count'])
     rv['user_count'] = int(instance['stats']['user_count'])
@@ -146,6 +146,8 @@ def close_msg(start_ts, execcount, stat_msg):
 
 def filter_frequented(name, snapshot):
     data = snapshot.get("data", {})
+    if data == {}:
+        return False
     if name not in data:
         return (hash(name) + snapshot.get("execcount", 0)) % 23 != 0
     current_ts = int(time.time())
@@ -190,6 +192,8 @@ def download_all(names, snapshot, time_left, processes):
     for ids in downloading:
         if downloading[ids] != "":
             print_ts(f"! {downloading[ids]} stucked")
+    executor._threads.clear()
+    concurrent.futures.thread._threads_queues.clear()
     for name in args:
         results.append(args[name].get("result"))
     return results, len(args)
@@ -367,6 +371,7 @@ def main():
     timeout = config.get("timeout", 720)
     global request_time
     request_time = config.get("request_time", 15)
+    socket.setdefaulttimeout(request_time)
     if isinstance(timeout, int):
         time_left = timeout + start_ts - int(time.time())
     else:
