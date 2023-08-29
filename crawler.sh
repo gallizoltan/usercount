@@ -16,7 +16,7 @@ STARTTS=$(date +'%s')
 
 stdbuf -o L python3 crawler.pyc $@ 2>&1 | tee -a crawler.log
 
-LOGLINES=$(grep loglines "config.txt" | cut -f2 -d":" | cut -f2 -d"\"")
+[ -f "config.txt" ] && LOGLINES=$(grep loglines "config.txt" | cut -f2 -d":" | cut -f2 -d"\"")
 [ -z "$LOGLINES" ] && LOGLINES="9998"
 tail -n $LOGLINES crawler.log > crawler.log.temp
 mv crawler.log.temp crawler.log
