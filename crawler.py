@@ -20,6 +20,23 @@ except Exception:
     print("Run: \'pip3 install psutil\' to see memory consumption")
 import common
 from tools import banURI
+import signal
+from contextlib import contextmanager
+
+
+class TimeoutException(Exception): pass
+
+
+@contextmanager
+def time_limit(seconds):
+    def signal_handler(signum, frame):
+        raise TimeoutException("Timed out!")
+    signal.signal(signal.SIGALRM, signal_handler)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
 
 
 class timeout_iterator:
@@ -120,10 +137,15 @@ def download_one_inner(name):
 
 
 def download_one(name):
+    rv = None
     try:
-        return download_one_inner(name)
+        with time_limit(request_time + 5):
+            rv = download_one_inner(name)
+    except TimeoutException as e:
+        print("\rTimeout for " + name)
     except Exception:
         pass
+    return rv
 
 
 def close_msg(start_ts, execcount, stat_msg):
