@@ -6,7 +6,6 @@ import os
 import json
 import csv
 import requests
-import multiprocessing
 import time
 import fcntl
 from datetime import datetime
@@ -20,37 +19,9 @@ except Exception:
     print("Run: \'pip3 install psutil\' to see memory consumption")
 import common
 from tools import banURI
-import signal
-from contextlib import contextmanager
+import threading
+import concurrent.futures
 
-
-class TimeoutException(Exception): pass
-
-
-@contextmanager
-def time_limit(seconds):
-    def signal_handler(signum, frame):
-        raise TimeoutException("Timed out!")
-    signal.signal(signal.SIGALRM, signal_handler)
-    signal.alarm(seconds)
-    try:
-        yield
-    finally:
-        signal.alarm(0)
-
-
-class timeout_iterator:
-    def __init__(self, pool_it, total_timeout):
-        self.pool_it = pool_it
-        self.total_timeout = total_timeout
-        self.start_ts = int(time.time())
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        remaining_time = self.total_timeout + self.start_ts - int(time.time())
-        return self.pool_it.next(remaining_time)
 
 
 def setup_environment():
@@ -136,16 +107,31 @@ def download_one_inner(name):
     return rv
 
 
+downloading = {}
+
+
 def download_one(name):
     rv = None
+    downloading[threading.get_ident()] = name
     try:
-        with time_limit(request_time + 5):
-            rv = download_one_inner(name)
-    except TimeoutException as e:
-        print("\rTimeout for " + name)
+        rv = download_one_inner(name)
     except Exception:
         pass
+    downloading[threading.get_ident()] = ""
     return rv
+
+
+def name_picker(names, time_left):
+    start_ts = int(time.time())
+    counter = 0
+    for name in names:
+        if time_left + start_ts - int(time.time()) <= 0:
+            break
+        if names[name]["lock"].acquire(blocking=False):
+            names[name]["ts"] = int(time.time())
+            names[name]["result"] = download_one(name)
+            counter += 1
+    return counter
 
 
 def close_msg(start_ts, execcount, stat_msg):
@@ -167,35 +153,45 @@ def filter_frequented(name, snapshot):
     return current_ts - ts > 3600*24*7 and int((current_ts - ts) / 3600) % 49 != 0
 
 
+futures = set()
+
+
 def download_all(names, snapshot, time_left, processes):
-    args = []
+    start_ts = int(time.time())
+    args = {}
     for name in names:
         if name.endswith('--'):
             continue
         if filter_frequented(name, snapshot):
             continue
-        args.append(name)
+        args[name] = {}
+        args[name]["lock"] = threading.Lock()
 
-    pool = multiprocessing.Pool(processes)
-    pool_result = pool.imap_unordered(download_one, args)
-    timeout_it = timeout_iterator(pool_result, time_left)
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=processes)
+    for threadid in range(processes):
+        futures.add(executor.submit(name_picker, args, time_left))
 
     results = []
-    last_print_ts = 0
-    try:
-        for i, rv in enumerate(timeout_it, 1):
-            results.append(rv)
-            current_ts = int(time.time())
-            if current_ts > last_print_ts + 5:
-                last_print_ts = current_ts
-                print('\r%d of %d done' % (i, len(args)), end='', flush=True)
-        print('\r', end='')
-    except multiprocessing.context.TimeoutError:
-        if last_print_ts == 0:
-            print("No time for crawl!!!")
-        else:
+    timeout = time_left + start_ts - int(time.time()) <= 0
+    if timeout:
+        print("No time for crawl!!!")
+    while not timeout:
+        done = sum(args[a]["lock"].locked() for a in args)
+        print('\r%d of %d done' % (done, len(args)), end='', flush=True)
+        max_ts = max(args[a].get("ts", 0) for a in args)
+        if max_ts + request_time + 5 < int(time.time()):
+            print('\r', end='')
+            break
+        timeout = time_left + start_ts - int(time.time()) <= 0
+        if timeout:
             print(", but no more time left!!!")
-    pool.terminate()
+            break
+        time.sleep(5)
+    for ids in downloading:
+        if downloading[ids] != "":
+            print_ts(f"! {downloading[ids]} stucked")
+    for name in args:
+        results.append(args[name].get("result"))
     return results, len(args)
 
 
@@ -396,3 +392,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+    done = sum(future.done() for future in futures)
+    if done < len(futures):
+        print_ts(f"! {done} of {len(futures)} futures done, killing process")
+        os.kill(os.getpid(), 9)
