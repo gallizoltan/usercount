@@ -192,9 +192,7 @@ def download_all(names, snapshot, time_left, processes):
         time.sleep(5)
     for ids in downloading:
         if downloading[ids] != "":
-            print_ts(f"! {downloading[ids]} stucked")
-    executor._threads.clear()
-    concurrent.futures.thread._threads_queues.clear()
+            print_ts(f"! {downloading[ids]} gets stuck")
     for name in args:
         results.append(args[name].get("result"))
     return results, len(args)
