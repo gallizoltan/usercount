@@ -178,10 +178,11 @@ def download_all(names, snapshot, time_left, processes):
     if timeout:
         print("No time for crawl!!!")
     while not timeout:
-        done = sum(args[a]["lock"].locked() for a in args)
-        print('\r%d of %d done' % (done, len(args)), end='', flush=True)
+        instance_done = sum(args[a]["lock"].locked() for a in args)
+        print('\r%d of %d done' % (instance_done, len(args)), end='', flush=True)
         max_ts = max(args[a].get("ts", 0) for a in args)
-        if max_ts + request_time + 5 < int(time.time()):
+        future_done = sum(future.done() for future in futures)
+        if len(futures) == future_done or max_ts + request_time + 5 < int(time.time()):
             print('\r', end='')
             break
         timeout = time_left + start_ts - int(time.time()) <= 0
