@@ -6,6 +6,7 @@ import pytz
 from datetime import datetime
 import common
 
+
 def ban_instance(target):
     tz = pytz.timezone('Europe/Budapest')
     print(datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S') + " + Banning " + target)
@@ -18,8 +19,8 @@ def ban_instance(target):
                 names[n] = target + "--"
     else:
         names.append(target + "--")
-        names = sorted(names)
 
+    names = sorted(set(names))
     common.save_json(list_file, names)
 
     snapshot_file = "snapshot.json"

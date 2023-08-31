@@ -11,7 +11,7 @@ def main():
     list_file = "list.json"
     names = common.get_json(list_file, default_value=[])
     names.append(target)
-    names = sorted(names)
+    names = sorted(set(names))
     common.save_json(list_file, names)
 
 
