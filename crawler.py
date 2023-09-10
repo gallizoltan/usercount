@@ -240,27 +240,27 @@ def update_snapshot(snapshot, results, news):
             if rv['user_count'] < 10:
                 continue
             if rv['user_count'] > 500:
-                print_ts("Name: %s uri: %s has too many users: %d" % (name, uri, rv['user_count']))
+                print_ts(f"- Name: {name} uri: {uri} has too many users: {rv['user_count']}")
                 rv['user_count'] = 500
             if FindInData(name, sn_data) is not None:
-                print_ts("Name: %s uri: %s cannot be automerged to list, name is already in the snapshot, users: %d" % (name, uri, rv['user_count']))
+                print_ts(f"! Name: {name} uri: {uri} cannot be automerged to list, name is already in the snapshot, users: {rv['user_count']}")
                 continue
             if name == uri:
-                print_ts("%s is automerged to list with %d users" % (name, rv['user_count']))
+                print_ts(f"+ {name} is automerged to list with {rv['user_count']} users")
                 new_names.append(name)
             else:
                 name_content = download_one(name)
                 uri_content = download_one(uri)
                 if name_content is not None and uri_content is None:
-                    print_ts("Name: %s uri: %s merge conflict resolved with using name, users: %d" % (name, uri, rv['user_count']))
+                    print_ts(f"+ Name: {name} uri: {uri}  merge conflict resolved with using name, users: {rv['user_count']}")
                     new_names.append(name)
                     new_names.append(uri + "--")
                 elif name_content is None and uri_content is not None:
-                    print_ts("Name: %s uri: %s merge conflict resolved with using uri, users: %d" % (name, uri, rv['user_count']))
+                    print_ts(f"+ Name: {name} uri: {uri}  merge conflict resolved with using uri, users: {rv['user_count']}")
                     new_names.append(name + "--")
                     new_names.append(uri)
                 else:
-                    print_ts("Name: %s uri: %s cannot be automerged to list, name and uri differs, users: %d" % (name, uri, rv['user_count']))
+                    print_ts(f"! Name: {name} uri: {uri} cannot be automerged to list, name and uri differs, users: {rv['user_count']}")
                     continue
         uri_version = FindInData(uri, results)
         if name == uri or uri_version is None:
@@ -269,28 +269,28 @@ def update_snapshot(snapshot, results, news):
             status_count += rv['status_count']
             instance_count += 1
         else:
-            print_ts("Instance %s is in the results with its name and uri %s, users: %d vs %d" % (name, uri, rv['user_count'], uri_version['user_count']))
+            print_ts(f"! Instance {name} is in the results with its name and uri {uri}, users: {rv['user_count']} vs {uri_version['user_count']}")
             ban_names.append(name)
         if name != uri and FindInData(uri, sn_data) is not None:
             sn_version = FindInData(name, sn_data)
             if sn_version is None:
-                print_ts("Instance %s is in the snapshot with its uri %s, users: %d" % (name, uri, rv['user_count']))
+                print_ts(f"! Instance {name} is in the snapshot with its uri {uri}, users: {rv['user_count']}")
             else:
-                print_ts("Instance %s is in the snapshot with its name and uri %s, users: %d vs %d!!!" % (name, uri, sn_version['user_count'], rv['user_count']))
+                print_ts(f"! Instance {name} is in the snapshot with its name and uri {uri}, users: {sn_version['user_count']} vs {rv['user_count']}!!!")
             name = uri
         old_user_count = sn_data.get(name, {}).get('user_count', 0)
         if old_user_count != 0 and rv['user_count'] > old_user_count + 500 and rv['user_count'] > old_user_count * 1.002:
-            print_ts(f"Unexpected growth for instance {name}: {old_user_count} -> {rv['user_count']} ~ {rv['user_count'] - old_user_count}")
+            print_ts(f"- Unexpected growth for instance {name}: {old_user_count} -> {rv['user_count']} ~ {rv['user_count'] - old_user_count}")
             allowed_change = config.get("allowed_change." + name, max(100, int(old_user_count * 0.001)))
             sn_data[name]['user_count'] = min(rv['user_count'], sn_data[name]['user_count'] + allowed_change)
             sn_data[name]['status_count'] = rv['status_count']
             sn_data[name]['ts'] = current_ts
             continue
         if old_user_count > rv['user_count'] + 2:
-            print_ts("Shrinking usercount in instance %s: %d -> %d" % (name, old_user_count, rv['user_count']))
+            print_ts(f"- Shrinking usercount in instance {name}: {old_user_count} -> {rv['user_count']}")
             allowed_change = config.get("allowed_change." + name, max(20, int(old_user_count * 0.0002)))
             if old_user_count > rv['user_count'] + allowed_change:
-                print_ts(f"Unexpected shrinking for instance {name}: {old_user_count} -> {rv['user_count']} ~ {old_user_count - rv['user_count']}")
+                print_ts(f"- Unexpected shrinking for instance {name}: {old_user_count} -> {rv['user_count']} ~ {old_user_count - rv['user_count']}")
                 sn_data[name]['user_count'] = max(rv['user_count'], sn_data[name]['user_count'] - allowed_change)
                 sn_data[name]['status_count'] = rv['status_count']
                 sn_data[name]['ts'] = current_ts
@@ -300,7 +300,7 @@ def update_snapshot(snapshot, results, news):
         sn_data[name]['status_count'] = rv['status_count']
         sn_data[name]['ts'] = current_ts
 
-    print_ts("+ Toots: %s, users: %s, instances: %s" % (status_count, user_count, instance_count))
+    print_ts(f"+ Toots: {status_count}, users: {user_count}, instances: {instance_count}")
 
     snapshot_file = "snapshot.json"
     with open(snapshot_file, 'w') as outfile:
