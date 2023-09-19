@@ -68,7 +68,7 @@ def extend_list(names):
 
 def print_ts(msg):
     tz = pytz.timezone('Europe/Budapest')
-    print(datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S') + " " + msg)
+    print(datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S') + " " + msg, flush=True)
 
 
 def setup_request_params(execcount, config):
@@ -183,7 +183,7 @@ def download_all(names, snapshot, time_left, processes):
         max_ts = max(args[a].get("ts", 0) for a in args)
         future_done = sum(future.done() for future in futures)
         if len(futures) == future_done or max_ts + request_time + 5 < int(time.time()):
-            print('\r', end='')
+            print('\r', end='', flush=True)
             break
         timeout = time_left + start_ts - int(time.time()) <= 0
         if timeout:
