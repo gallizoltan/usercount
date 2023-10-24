@@ -241,7 +241,7 @@ def update_snapshot(snapshot, results, news):
                 continue
             if rv['user_count'] > 500:
                 print_ts(f"- Name: {name} uri: {uri} has too many users: {rv['user_count']}")
-                rv['user_count'] = 500
+                continue
             if FindInData(name, sn_data) is not None:
                 print_ts(f"! Name: {name} uri: {uri} cannot be automerged to list, name is already in the snapshot, users: {rv['user_count']}")
                 continue
