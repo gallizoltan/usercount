@@ -14,7 +14,17 @@ echo $(date +"%Y-%m-%d %H:%M:%S")" + Crawler started with execcount $EXECCOUNT" 
 
 STARTTS=$(date +'%s')
 
-stdbuf -o L python3 crawler.pyc $@ 2>&1 | tee -a crawler.log
+MASTO1=$(tail -1 mastostats.csv)
+
+while [[ $STARTTS -gt $(($(date +%s) - 1200)) ]]; do
+    stdbuf -o L python3 crawler.pyc $@ 2>&1 | tee -a crawler.log
+    MASTO2=$(tail -1 mastostats.csv)
+    if [ "$MASTO1" == "$MASTO2" ]; then
+        echo $(date +"%Y-%m-%d %H:%M:%S")" !!! Crawler err" | tee -a crawler.log
+    else
+        break
+    fi
+done
 
 [ -f "config.txt" ] && LOGLINES=$(grep loglines "config.txt" | cut -f2 -d":" | cut -f2 -d"\"")
 [ -z "$LOGLINES" ] && LOGLINES="9998"
