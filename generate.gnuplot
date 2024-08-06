@@ -152,8 +152,8 @@ set style line 12 lc rgb "#FEFEFE" lt 1 lw 5
 set grid
 
 # Plot the graph
-plot "mastostats.csv" every ::1 using 1:2 w filledcurves x1 title '' fs transparent solid 0.7 lc rgb "#2e85ad", \
-        '' u ($1):(d_smooth($2, uc_extreme)) w filledcurves x1 title '' axes x1y2 fs transparent solid 0.5 noborder lc rgb "#7ae9d8"
+plot "mastostats.csv" every ::1 using 1:2 w filledcurves x1 title '' fs transparent solid 0.5 lc rgb "#2e85ad", \
+        '' u ($1):(d_smooth($2, uc_extreme)) w filledcurves x1 title '' axes x1y2 fs transparent solid 0.3 noborder lc rgb "#7ae9d8"
 
 
 
@@ -189,8 +189,8 @@ set style line 12 lc rgb "#FEFEFE" lt 1 lw 5
 set grid
 
 # Plot the graph
-plot "mastostats.csv" every ::1 using 1:3 w filledcurves x1 title '' fs transparent solid 0.7 lc rgb "#E9967A", \
-        '' u ($1):(d_smooth($4, tc_extreme)/1e3) w filledcurves x1 title '' axes x1y2 fs transparent solid 0.5 noborder lc rgb "#EEE8AA"
+plot "mastostats.csv" every ::1 using 1:3 w filledcurves x1 title '' fs transparent solid 0.5 lc rgb "#E9967A", \
+        '' u ($1):(d_smooth($4, tc_extreme)/1e3) w filledcurves x1 title '' axes x1y2 fs transparent solid 0.3 noborder lc rgb "#EEE8AA"
 
 
 # I think this needs to be here for some reason
