@@ -16,7 +16,7 @@ urllib3.disable_warnings(urllib3.exceptions.SecurityWarning)
 try:
     import psutil
 except Exception:
-    print("Run: \'pip3 install psutil\' to see memory consumption")
+    print("Run: \'pip3 install psutil\' or \'sudo apt install python3-psutil\' to see memory consumption")
 import common
 from tools import banURI
 import threading
