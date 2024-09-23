@@ -301,6 +301,8 @@ def update_snapshot(snapshot, results, news):
         sn_data[name]['ts'] = current_ts
 
     print_ts(f"+ Toots: {status_count}, users: {user_count}, instances: {instance_count}")
+    if status_count == 0 and user_count == 0 and instance_count == 0:
+        print_ts(f"!!! Crawler err: no activity")
 
     snapshot_file = "snapshot.json"
     with open(snapshot_file, 'w') as outfile:
